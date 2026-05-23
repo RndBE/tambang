@@ -163,7 +163,7 @@ function DeviceCard({
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <CardTitle className="text-sm">{mode === "gnss" ? "Logger GNSS" : "Logger AWLR"}</CardTitle>
+            <CardTitle className="text-sm">{mode === "gnss" ? "Logger ADR" : "Logger AWLR"}</CardTitle>
             <CardDescription>{station.name}</CardDescription>
           </div>
           <StatusBadge status={station.status} />
@@ -356,7 +356,7 @@ function GnssObservations({ data }: { data: GnssMonitoringData }) {
       <CardHeader className="pb-3">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <CardTitle className="text-sm">Observasi GNSS</CardTitle>
+            <CardTitle className="text-sm">Observasi ADR / Deformasi</CardTitle>
             <CardDescription>
               {data.analysis.sampleCount} {granularityUnit(data.selectedGranularity)}
             </CardDescription>
@@ -514,7 +514,7 @@ function GnssComparison({ data }: { data: GnssMonitoringData }) {
     <Card className="interactive-card">
       <CardHeader className="pb-3">
         <CardTitle className="text-sm">Perbandingan Pos</CardTitle>
-        <CardDescription>Nilai terkini per lokasi GNSS</CardDescription>
+        <CardDescription>Nilai terkini per lokasi ADR / deformasi</CardDescription>
       </CardHeader>
       <CardContent className="space-y-2 pb-3">
         {data.comparison.map((item) => (
