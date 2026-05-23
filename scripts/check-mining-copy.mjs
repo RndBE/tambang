@@ -20,6 +20,14 @@ const allowFiles = new Set([
   "docs/superpowers/specs/2026-05-23-mining-monitoring-system-design.md",
   "docs/superpowers/plans/2026-05-23-mining-monitoring-system.md",
 ]);
+const forbiddenMatchers = forbidden.map((term) => {
+  if (term === "rob") {
+    const pattern = /(^|[^\p{L}\p{N}_])rob([^\p{L}\p{N}_]|$)/iu;
+    return { term, matches: (line) => pattern.test(line) };
+  }
+
+  return { term, matches: (line) => line.toLowerCase().includes(term) };
+});
 
 function extname(path) {
   const index = path.lastIndexOf(".");
@@ -42,9 +50,8 @@ for (const file of files) {
 
   const lines = readFileSync(file, "utf8").split(/\r?\n/);
   lines.forEach((line, index) => {
-    const lower = line.toLowerCase();
-    for (const term of forbidden) {
-      if (lower.includes(term)) {
+    for (const { term, matches } of forbiddenMatchers) {
+      if (matches(line)) {
         hits.push(`${normalized}:${index + 1}: ${term}: ${line.trim()}`);
       }
     }
