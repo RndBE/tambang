@@ -100,34 +100,21 @@ function buildWaterLevelReadings({
   function rawValueAt(elapsedHours) {
     const progress = elapsedHours / totalHours;
     const meanLevel = baseLevelM + eventBiasM * Math.pow(progress, 1.4);
-    const springNeap =
-      0.82 + 0.18 * Math.sin((elapsedHours / (14.77 * 24) + phase) * Math.PI * 2);
-    const semidiurnal =
+    const pumpCycle =
       amplitudeM *
-      springNeap *
-      Math.sin((elapsedHours / 12.42 + phase) * Math.PI * 2);
-    const diurnalInequality =
+      0.28 *
+      Math.sin((elapsedHours / 8 + phase) * Math.PI * 2);
+    const rainfallInflow =
+      bell(elapsedHours, totalHours * 0.18, 26, amplitudeM * 0.28) +
+      bell(elapsedHours, totalHours * 0.46, 42, amplitudeM * 0.36) +
+      bell(elapsedHours, totalHours * 0.73, 54, amplitudeM * 0.42) +
+      bell(elapsedHours, totalHours - 10, 18, amplitudeM * 0.58);
+    const processVariation =
       amplitudeM *
-      0.24 *
-      Math.sin((elapsedHours / 24.84 + phase * 0.6) * Math.PI * 2);
-    const coastalSetUp =
-      amplitudeM *
-      0.12 *
-      Math.sin((elapsedHours / (6.8 * 24) + phase * 1.7) * Math.PI * 2);
-    const weatherSurge =
-      bell(elapsedHours, totalHours * 0.18, 26, amplitudeM * 0.18) +
-      bell(elapsedHours, totalHours * 0.46, 42, amplitudeM * 0.24) +
-      bell(elapsedHours, totalHours * 0.73, 54, amplitudeM * 0.28) +
-      bell(elapsedHours, totalHours - 10, 18, amplitudeM * 0.42);
+      0.18 *
+      Math.sin((elapsedHours / (5.6 * 24) + phase * 1.7) * Math.PI * 2);
 
-    return (
-      meanLevel +
-      semidiurnal +
-      diurnalInequality +
-      coastalSetUp +
-      weatherSurge +
-      jitter(elapsedHours)
-    );
+    return meanLevel + pumpCycle + rainfallInflow + processVariation + jitter(elapsedHours);
   }
 
   const finalCorrection = endLevelM - rawValueAt(totalHours);
@@ -236,568 +223,96 @@ async function main() {
     ),
   );
 
+  const roleId = (name) => roles.find((role) => role.name === name).id;
+
   await prisma.user.createMany({
     data: [
-      {
-        name: "Operator Pantura",
-        email: "operator@gnss.local",
-        passwordHash: bcrypt.hashSync("operator123", 10),
-        roleId: roles.find((role) => role.name === "Operator").id,
-      },
-      {
-        name: "Admin Instansi",
-        email: "admin@gnss.local",
-        passwordHash: bcrypt.hashSync("admin123", 10),
-        roleId: roles.find((role) => role.name === "Admin Instansi").id,
-      },
-      {
-        name: "Teknisi Lapangan",
-        email: "teknisi@gnss.local",
-        passwordHash: bcrypt.hashSync("teknisi123", 10),
-        roleId: roles.find((role) => role.name === "Teknisi").id,
-      },
-      {
-        name: "Viewer Stakeholder",
-        email: "viewer@gnss.local",
-        passwordHash: bcrypt.hashSync("viewer123", 10),
-        roleId: roles.find((role) => role.name === "Viewer").id,
-      },
-      {
-        name: "Super Admin",
-        email: "superadmin@gnss.local",
-        passwordHash: bcrypt.hashSync("superadmin123", 10),
-        roleId: roles.find((role) => role.name === "Super Admin").id,
-      },
+      { name: "Operator Tambang", email: "operator@mining.local", passwordHash: bcrypt.hashSync("operator123", 10), roleId: roleId("Operator") },
+      { name: "Admin Geoteknik", email: "admin@mining.local", passwordHash: bcrypt.hashSync("admin123", 10), roleId: roleId("Admin Instansi") },
+      { name: "Teknisi Instrumentasi", email: "teknisi@mining.local", passwordHash: bcrypt.hashSync("teknisi123", 10), roleId: roleId("Teknisi") },
+      { name: "Viewer Manajemen", email: "viewer@mining.local", passwordHash: bcrypt.hashSync("viewer123", 10), roleId: roleId("Viewer") },
+      { name: "Super Admin", email: "superadmin@mining.local", passwordHash: bcrypt.hashSync("superadmin123", 10), roleId: roleId("Super Admin") },
     ],
   });
 
-  const pekalongan = await prisma.monitoringArea.create({
-    data: {
-      name: "Pekalongan Utara",
-      city: "Kota Pekalongan",
-      province: "Jawa Tengah",
-      description: "Area prioritas rob dan penurunan tanah pesisir.",
-    },
-  });
-  const semarang = await prisma.monitoringArea.create({
-    data: {
-      name: "Semarang Utara",
-      city: "Kota Semarang",
-      province: "Jawa Tengah",
-      description: "Area pelabuhan dan permukiman pesisir.",
-    },
-  });
-  const demak = await prisma.monitoringArea.create({
-    data: {
-      name: "Sayung",
-      city: "Kabupaten Demak",
-      province: "Jawa Tengah",
-      description: "Area pesisir dengan riwayat rob berulang.",
-    },
-  });
-  const batang = await prisma.monitoringArea.create({
-    data: {
-      name: "Batang Roban",
-      city: "Kabupaten Batang",
-      province: "Jawa Tengah",
-      description: "Koridor pesisir industri dan pantai utara Batang.",
-    },
-  });
-  const kendal = await prisma.monitoringArea.create({
-    data: {
-      name: "Kendal Kaliwungu",
-      city: "Kabupaten Kendal",
-      province: "Jawa Tengah",
-      description: "Area muara dan kawasan industri pesisir Kendal.",
-    },
-  });
+  const areaDefinitions = [
+    ["area-pit-a", "Pit A", "Area pit aktif dengan pemantauan lereng, cuaca kerja, dan deformasi bench."],
+    ["area-pit-b", "Pit B", "Koridor haul road dan area workshop dengan pemantauan paparan debu serta kebisingan."],
+    ["area-north-highwall", "North Highwall", "Lereng tinggi sisi utara dengan prioritas pemantauan pergerakan dan curah hujan."],
+    ["area-south-dump", "South Dump", "Timbunan disposal selatan dengan pemantauan deformasi dan tekanan air pori."],
+    ["area-settling-pond", "Settling Pond", "Kolam pengendapan dan outlet air tambang dengan pemantauan level serta kualitas lingkungan."],
+    ["area-tailing-dam", "Tailing Dam", "Fasilitas penampungan tailing dan portal risiko dengan pemantauan gas serta inspeksi visual."],
+  ];
 
-  const gnssPkl = await prisma.monitoringPoint.create({
-    data: {
-      code: "gnss-pkl-01",
-      name: "GNSS PKL-01",
-      type: "GNSS",
-      latitude: -6.873,
-      longitude: 109.675,
-      areaId: pekalongan.id,
-      status: "AWAS",
-      latestValue: "-8.2 cm/tahun",
-      baselineElevationM: 2.14,
-      currentElevationM: 1.78,
-      totalSubsidenceCm: -36,
-      velocityCmYear: -8.2,
-      lastUpdate: hoursAgo(0.03),
-    },
-  });
-  const gnssSmg = await prisma.monitoringPoint.create({
-    data: {
-      code: "gnss-smg-02",
-      name: "GNSS SMG-02",
-      type: "GNSS",
-      latitude: -6.957,
-      longitude: 110.421,
-      areaId: semarang.id,
-      status: "SIAGA",
-      latestValue: "-5.1 cm/tahun",
-      baselineElevationM: 2.42,
-      currentElevationM: 2.19,
-      totalSubsidenceCm: -23,
-      velocityCmYear: -5.1,
-      lastUpdate: hoursAgo(0.06),
-    },
-  });
-  const gnssDmk = await prisma.monitoringPoint.create({
-    data: {
-      code: "gnss-dmk-03",
-      name: "GNSS DMK-03",
-      type: "GNSS",
-      latitude: -6.887,
-      longitude: 110.638,
-      areaId: demak.id,
-      status: "WASPADA",
-      latestValue: "-3.2 cm/tahun",
-      baselineElevationM: 1.86,
-      currentElevationM: 1.72,
-      totalSubsidenceCm: -14,
-      velocityCmYear: -3.2,
-      lastUpdate: hoursAgo(0.15),
-    },
-  });
-  const awlrPkl = await prisma.monitoringPoint.create({
-    data: {
-      code: "awlr-pkl-01",
-      name: "AWLR PKL-01",
-      type: "AWLR",
-      latitude: -6.859,
-      longitude: 109.671,
-      areaId: pekalongan.id,
-      status: "SIAGA",
-      latestValue: "1.89 m",
-      lastUpdate: now,
-    },
-  });
-  const awlrSmg = await prisma.monitoringPoint.create({
-    data: {
-      code: "awlr-smg-01",
-      name: "Tide SMG-01",
-      type: "AWLR",
-      latitude: -6.948,
-      longitude: 110.405,
-      areaId: semarang.id,
-      status: "WASPADA",
-      latestValue: "1.62 m",
-      lastUpdate: now,
-    },
-  });
-  const cctvPkl = await prisma.monitoringPoint.create({
-    data: {
-      code: "cctv-pkl-01",
-      name: "CCTV Tanggul PKL",
-      type: "CCTV",
-      latitude: -6.866,
-      longitude: 109.682,
-      areaId: pekalongan.id,
-      status: "SIAGA",
-      latestValue: "Online",
-      lastUpdate: hoursAgo(0.1),
-    },
-  });
-  const cctvSmg = await prisma.monitoringPoint.create({
-    data: {
-      code: "cctv-smg-02",
-      name: "CCTV Pelabuhan",
-      type: "CCTV",
-      latitude: -6.946,
-      longitude: 110.421,
-      areaId: semarang.id,
-      status: "NORMAL",
-      latestValue: "Online",
-      lastUpdate: hoursAgo(0.2),
-    },
-  });
-  const gnssBtg = await prisma.monitoringPoint.create({
-    data: {
-      code: "gnss-btg-01",
-      name: "GNSS BTG-01",
-      type: "GNSS",
-      latitude: -6.899,
-      longitude: 109.73,
-      areaId: batang.id,
-      status: "SIAGA",
-      latestValue: "-4.6 cm/tahun",
-      baselineElevationM: 2.08,
-      currentElevationM: 1.89,
-      totalSubsidenceCm: -19,
-      velocityCmYear: -4.6,
-      lastUpdate: hoursAgo(0.08),
-    },
-  });
-  const awlrBtg = await prisma.monitoringPoint.create({
-    data: {
-      code: "awlr-btg-01",
-      name: "AWLR Roban BTG-01",
-      type: "AWLR",
-      latitude: -6.885,
-      longitude: 109.736,
-      areaId: batang.id,
-      status: "WASPADA",
-      latestValue: "1.58 m",
-      lastUpdate: hoursAgo(0.02),
-    },
-  });
-  const cctvBtg = await prisma.monitoringPoint.create({
-    data: {
-      code: "cctv-btg-01",
-      name: "CCTV Pantai Roban",
-      type: "CCTV",
-      latitude: -6.872,
-      longitude: 109.744,
-      areaId: batang.id,
-      status: "NORMAL",
-      latestValue: "Online",
-      lastUpdate: hoursAgo(0.18),
-    },
-  });
-  const gnssKdl = await prisma.monitoringPoint.create({
-    data: {
-      code: "gnss-kdl-01",
-      name: "GNSS KDL-01",
-      type: "GNSS",
-      latitude: -6.923,
-      longitude: 110.209,
-      areaId: kendal.id,
-      status: "WASPADA",
-      latestValue: "-2.8 cm/tahun",
-      baselineElevationM: 2.22,
-      currentElevationM: 2.08,
-      totalSubsidenceCm: -14,
-      velocityCmYear: -2.8,
-      lastUpdate: hoursAgo(0.12),
-    },
-  });
-  const awlrKdl = await prisma.monitoringPoint.create({
-    data: {
-      code: "awlr-kdl-01",
-      name: "AWLR KDL-01",
-      type: "AWLR",
-      latitude: -6.892,
-      longitude: 110.191,
-      areaId: kendal.id,
-      status: "SIAGA",
-      latestValue: "1.72 m",
-      lastUpdate: hoursAgo(0.04),
-    },
-  });
-  const cctvKdl = await prisma.monitoringPoint.create({
-    data: {
-      code: "cctv-kdl-01",
-      name: "CCTV Kali Bodri",
-      type: "CCTV",
-      latitude: -6.888,
-      longitude: 110.199,
-      areaId: kendal.id,
-      status: "WASPADA",
-      latestValue: "Online",
-      lastUpdate: hoursAgo(0.22),
-    },
-  });
+  const areaByKey = {};
+  for (const [key, name, description] of areaDefinitions) {
+    areaByKey[key] = await prisma.monitoringArea.create({
+      data: { name, city: "Demo Mine", province: "Kalimantan", description },
+    });
+  }
+
+  const pointDefinitions = [
+    ["adrHw01", "adr-hw-01", "ADR North Highwall 01", "GNSS", "area-north-highwall", "SIAGA", "Displacement 42 mm", -1.214, 116.812, 186.4, 186.358, -4.2, -8.4, hoursAgo(0.03)],
+    ["adrDump01", "adr-dump-01", "ADR South Dump 01", "GNSS", "area-south-dump", "WASPADA", "Displacement 27 mm", -1.231, 116.798, 142.8, 142.773, -2.7, -5.2, hoursAgo(0.08)],
+    ["adrPitA01", "adr-pit-a-01", "ADR Pit A 01", "GNSS", "area-pit-a", "NORMAL", "Displacement 8 mm", -1.223, 116.824, 98.2, 98.192, -0.8, -1.4, hoursAgo(0.12)],
+    ["awlrSp01", "awlr-sp-01", "AWLR Settling Pond 01", "AWLR", "area-settling-pond", "WASPADA", "Level 3.18 m", -1.242, 116.835, null, null, null, null, now],
+    ["awqrSp01", "awqr-sp-01", "AWQR Settling Pond Outlet", "WEATHER", "area-settling-pond", "NORMAL", "pH 7.2, TSS normal", -1.246, 116.839, null, null, null, null, hoursAgo(0.2)],
+    ["arrHw01", "arr-hw-01", "ARR North Highwall", "WEATHER", "area-north-highwall", "SIAGA", "Rainfall 82 mm/24h", -1.216, 116.815, null, null, null, null, hoursAgo(0.05)],
+    ["awsPitA01", "aws-pit-a-01", "AWS Pit A", "WEATHER", "area-pit-a", "NORMAL", "Weather normal", -1.225, 116.828, null, null, null, null, hoursAgo(0.16)],
+    ["pzDump01", "pz-dump-01", "Piezometer South Dump 01", "WEATHER", "area-south-dump", "WASPADA", "Pore pressure 118 kPa", -1.234, 116.794, null, null, null, null, hoursAgo(0.18)],
+    ["dustHaul01", "dust-haul-01", "Dust Sensor Haul Road 01", "WEATHER", "area-pit-b", "WASPADA", "PM10 148 ug/m3", -1.219, 116.804, null, null, null, null, hoursAgo(0.22)],
+    ["noiseWs01", "noise-ws-01", "Noise Sensor Workshop", "WEATHER", "area-pit-b", "NORMAL", "Noise 68 dBA", -1.217, 116.799, null, null, null, null, hoursAgo(0.28)],
+    ["gasUg01", "gas-ug-01", "Gas Sensor UG Portal 01", "WEATHER", "area-tailing-dam", "AWAS", "CO 72 ppm", -1.251, 116.807, null, null, null, null, hoursAgo(0.04)],
+    ["cctvHw01", "cctv-hw-01", "CCTV North Highwall", "CCTV", "area-north-highwall", "SIAGA", "Online", -1.215, 116.817, null, null, null, null, hoursAgo(0.1)],
+    ["cctvSp01", "cctv-sp-01", "CCTV Settling Pond", "CCTV", "area-settling-pond", "WASPADA", "Online", -1.244, 116.837, null, null, null, null, hoursAgo(0.15)],
+  ];
+
+  const points = {};
+  for (const [key, code, name, type, areaKey, status, latestValue, latitude, longitude, baselineElevationM, currentElevationM, totalSubsidenceCm, velocityCmYear, lastUpdate] of pointDefinitions) {
+    points[key] = await prisma.monitoringPoint.create({
+      data: { code, name, type, latitude, longitude, areaId: areaByKey[areaKey].id, status, latestValue, baselineElevationM, currentElevationM, totalSubsidenceCm, velocityCmYear, lastUpdate },
+    });
+  }
 
   await prisma.gnssReading.createMany({
     data: [
-      ...buildGnssReadings({
-        pointId: gnssPkl.id,
-        startElevationM: 1.94,
-        endElevationM: 1.78,
-        startSubsidenceCm: -3.6,
-        endSubsidenceCm: -8.2,
-        startVelocityCmYear: -4.4,
-        endVelocityCmYear: -8.2,
-      }),
-      ...buildGnssReadings({
-        pointId: gnssSmg.id,
-        startElevationM: 2.34,
-        endElevationM: 2.19,
-        startSubsidenceCm: -2.4,
-        endSubsidenceCm: -5.1,
-        startVelocityCmYear: -2.7,
-        endVelocityCmYear: -5.1,
-      }),
-      ...buildGnssReadings({
-        pointId: gnssDmk.id,
-        startElevationM: 1.83,
-        endElevationM: 1.72,
-        startSubsidenceCm: -1.3,
-        endSubsidenceCm: -3.2,
-        startVelocityCmYear: -1.5,
-        endVelocityCmYear: -3.2,
-      }),
-      ...buildGnssReadings({
-        pointId: gnssBtg.id,
-        startElevationM: 2.03,
-        endElevationM: 1.89,
-        startSubsidenceCm: -1.8,
-        endSubsidenceCm: -4.6,
-        startVelocityCmYear: -2.1,
-        endVelocityCmYear: -4.6,
-      }),
-      ...buildGnssReadings({
-        pointId: gnssKdl.id,
-        startElevationM: 2.18,
-        endElevationM: 2.08,
-        startSubsidenceCm: -1.1,
-        endSubsidenceCm: -2.8,
-        startVelocityCmYear: -1.2,
-        endVelocityCmYear: -2.8,
-      }),
+      ...buildGnssReadings({ pointId: points.adrHw01.id, startElevationM: 186.39, endElevationM: 186.358, startSubsidenceCm: -1.2, endSubsidenceCm: -4.2, startVelocityCmYear: -3.1, endVelocityCmYear: -8.4 }),
+      ...buildGnssReadings({ pointId: points.adrDump01.id, startElevationM: 142.79, endElevationM: 142.773, startSubsidenceCm: -0.9, endSubsidenceCm: -2.7, startVelocityCmYear: -2.4, endVelocityCmYear: -5.2 }),
+      ...buildGnssReadings({ pointId: points.adrPitA01.id, startElevationM: 98.198, endElevationM: 98.192, startSubsidenceCm: -0.2, endSubsidenceCm: -0.8, startVelocityCmYear: -0.8, endVelocityCmYear: -1.4 }),
     ],
   });
 
   await prisma.waterLevelReading.createMany({
-    data: [
-      ...buildWaterLevelReadings({
-        pointId: awlrPkl.id,
-        baseLevelM: 1.52,
-        amplitudeM: 0.19,
-        endLevelM: 1.89,
-        phase: 0.15,
-        eventBiasM: 0.08,
-        waspadaM: 1.6,
-        siagaM: 1.8,
-        awasM: 2.0,
-      }),
-      ...buildWaterLevelReadings({
-        pointId: awlrSmg.id,
-        baseLevelM: 1.4,
-        amplitudeM: 0.16,
-        endLevelM: 1.62,
-        phase: 0.55,
-        eventBiasM: 0.03,
-        waspadaM: 1.55,
-        siagaM: 1.75,
-        awasM: 1.95,
-      }),
-      ...buildWaterLevelReadings({
-        pointId: awlrBtg.id,
-        baseLevelM: 1.34,
-        amplitudeM: 0.17,
-        endLevelM: 1.58,
-        phase: 0.35,
-        eventBiasM: 0.04,
-        waspadaM: 1.5,
-        siagaM: 1.7,
-        awasM: 1.9,
-      }),
-      ...buildWaterLevelReadings({
-        pointId: awlrKdl.id,
-        baseLevelM: 1.42,
-        amplitudeM: 0.18,
-        endLevelM: 1.72,
-        phase: 0.75,
-        eventBiasM: 0.06,
-        waspadaM: 1.52,
-        siagaM: 1.7,
-        awasM: 1.92,
-      }),
-    ],
+    data: buildWaterLevelReadings({ pointId: points.awlrSp01.id, baseLevelM: 2.64, amplitudeM: 0.22, endLevelM: 3.18, phase: 0.32, eventBiasM: 0.18, waspadaM: 3, siagaM: 3.35, awasM: 3.65 }),
   });
 
   await prisma.weatherReading.createMany({
     data: [
-      ...buildWeatherReadings({
-        pointId: awlrPkl.id,
-        rainfallPeakMm: 16,
-        temperatureBaseC: 29.1,
-        humidityBasePct: 78,
-        windBaseMs: 3.8,
-      }),
-      ...buildWeatherReadings({
-        pointId: awlrSmg.id,
-        rainfallPeakMm: 11,
-        temperatureBaseC: 30.2,
-        humidityBasePct: 74,
-        windBaseMs: 4.1,
-      }),
-      ...buildWeatherReadings({
-        pointId: awlrBtg.id,
-        rainfallPeakMm: 14,
-        temperatureBaseC: 29.5,
-        humidityBasePct: 80,
-        windBaseMs: 3.4,
-      }),
-      ...buildWeatherReadings({
-        pointId: awlrKdl.id,
-        rainfallPeakMm: 19,
-        temperatureBaseC: 29.8,
-        humidityBasePct: 82,
-        windBaseMs: 4.4,
-      }),
+      ...buildWeatherReadings({ pointId: points.awqrSp01.id, rainfallPeakMm: 18, temperatureBaseC: 29.6, humidityBasePct: 81, windBaseMs: 2.3 }),
+      ...buildWeatherReadings({ pointId: points.arrHw01.id, rainfallPeakMm: 82, temperatureBaseC: 27.8, humidityBasePct: 88, windBaseMs: 4.1 }),
+      ...buildWeatherReadings({ pointId: points.awsPitA01.id, rainfallPeakMm: 12, temperatureBaseC: 30.4, humidityBasePct: 72, windBaseMs: 3.5 }),
+      ...buildWeatherReadings({ pointId: points.pzDump01.id, rainfallPeakMm: 36, temperatureBaseC: 28.7, humidityBasePct: 84, windBaseMs: 2.7 }),
+      ...buildWeatherReadings({ pointId: points.dustHaul01.id, rainfallPeakMm: 8, temperatureBaseC: 31.2, humidityBasePct: 68, windBaseMs: 5.2 }),
+      ...buildWeatherReadings({ pointId: points.noiseWs01.id, rainfallPeakMm: 6, temperatureBaseC: 30.8, humidityBasePct: 70, windBaseMs: 2.9 }),
+      ...buildWeatherReadings({ pointId: points.gasUg01.id, rainfallPeakMm: 22, temperatureBaseC: 28.9, humidityBasePct: 86, windBaseMs: 1.8 }),
     ],
   });
 
-  await prisma.device.create({
-    data: {
-      code: "dev-cctv-slamaran",
-      name: "CCTV Tanggul PKL",
-      type: "CCTV",
-      status: "WEAK",
-      battery: 24,
-      signal: 38,
-      solarCharging: true,
-      firmwareVersion: "1.8.0",
-      sensorStatus: "Camera tanggul online, battery low",
-      lastDataReceived: hoursAgo(0.1),
-      pointId: cctvPkl.id,
-    },
-  });
-  await prisma.device.create({
-    data: {
-      code: "dev-gnss-dmk",
-      name: "Logger GNSS DMK-03",
-      type: "LOGGER",
-      status: "MAINTENANCE",
-      battery: 55,
-      signal: 0,
-      solarCharging: false,
-      firmwareVersion: "2.1.4",
-      sensorStatus: "GNSS maintenance",
-      lastDataReceived: hoursAgo(2.3),
-      pointId: gnssDmk.id,
-    },
-  });
   await prisma.device.createMany({
     data: [
-      {
-        code: "dev-gnss-pkl",
-        name: "Logger GNSS PKL-01",
-        type: "LOGGER",
-        status: "ONLINE",
-        battery: 88,
-        signal: 78,
-        firmwareVersion: "2.1.4",
-        sensorStatus: "GNSS aktif",
-        lastDataReceived: hoursAgo(0.03),
-        pointId: gnssPkl.id,
-      },
-      {
-        code: "dev-gnss-smg",
-        name: "Logger GNSS SMG-02",
-        type: "LOGGER",
-        status: "WEAK",
-        battery: 66,
-        signal: 61,
-        firmwareVersion: "2.1.4",
-        sensorStatus: "GNSS aktif, sinyal sedang",
-        lastDataReceived: hoursAgo(0.06),
-        pointId: gnssSmg.id,
-      },
-      {
-        code: "dev-awlr-pkl",
-        name: "Telemetry AWLR PKL-01",
-        type: "AWLR",
-        status: "ONLINE",
-        battery: 72,
-        signal: 64,
-        firmwareVersion: "1.9.2",
-        sensorStatus: "AWLR aktif",
-        lastDataReceived: now,
-        pointId: awlrPkl.id,
-      },
-      {
-        code: "dev-awlr-smg",
-        name: "Telemetry Tide SMG-01",
-        type: "AWLR",
-        status: "WEAK",
-        battery: 68,
-        signal: 57,
-        firmwareVersion: "1.9.2",
-        sensorStatus: "Tide gauge aktif",
-        lastDataReceived: now,
-        pointId: awlrSmg.id,
-      },
-      {
-        code: "dev-cctv-pelabuhan",
-        name: "CCTV Pelabuhan",
-        type: "CCTV",
-        status: "ONLINE",
-        battery: 84,
-        signal: 76,
-        firmwareVersion: "1.8.0",
-        sensorStatus: "Camera pelabuhan online",
-        lastDataReceived: hoursAgo(0.2),
-        pointId: cctvSmg.id,
-      },
-      {
-        code: "dev-gnss-btg",
-        name: "Logger GNSS BTG-01",
-        type: "LOGGER",
-        status: "ONLINE",
-        battery: 81,
-        signal: 73,
-        firmwareVersion: "2.1.5",
-        sensorStatus: "GNSS aktif",
-        lastDataReceived: hoursAgo(0.08),
-        pointId: gnssBtg.id,
-      },
-      {
-        code: "dev-awlr-btg",
-        name: "Telemetry AWLR BTG-01",
-        type: "AWLR",
-        status: "ONLINE",
-        battery: 76,
-        signal: 69,
-        firmwareVersion: "1.9.3",
-        sensorStatus: "AWLR aktif",
-        lastDataReceived: hoursAgo(0.02),
-        pointId: awlrBtg.id,
-      },
-      {
-        code: "dev-cctv-btg",
-        name: "CCTV Pantai Roban",
-        type: "CCTV",
-        status: "ONLINE",
-        battery: 79,
-        signal: 70,
-        firmwareVersion: "1.8.1",
-        sensorStatus: "Camera pantai online",
-        lastDataReceived: hoursAgo(0.18),
-        pointId: cctvBtg.id,
-      },
-      {
-        code: "dev-gnss-kdl",
-        name: "Logger GNSS KDL-01",
-        type: "LOGGER",
-        status: "WEAK",
-        battery: 59,
-        signal: 48,
-        firmwareVersion: "2.1.5",
-        sensorStatus: "GNSS aktif, sinyal melemah",
-        lastDataReceived: hoursAgo(0.12),
-        pointId: gnssKdl.id,
-      },
-      {
-        code: "dev-awlr-kdl",
-        name: "Telemetry AWLR KDL-01",
-        type: "AWLR",
-        status: "ONLINE",
-        battery: 83,
-        signal: 75,
-        firmwareVersion: "1.9.3",
-        sensorStatus: "AWLR aktif",
-        lastDataReceived: hoursAgo(0.04),
-        pointId: awlrKdl.id,
-      },
-      {
-        code: "dev-cctv-kdl",
-        name: "CCTV Kali Bodri",
-        type: "CCTV",
-        status: "WEAK",
-        battery: 46,
-        signal: 53,
-        firmwareVersion: "1.8.1",
-        sensorStatus: "Camera online, panel perlu pengecekan",
-        lastDataReceived: hoursAgo(0.22),
-        pointId: cctvKdl.id,
-      },
+      { code: "dev-adr-hw-01", name: "Logger ADR North Highwall 01", type: "GNSS", status: "ONLINE", battery: 82, signal: 76, firmwareVersion: "2.2.0", sensorStatus: "ADR aktif, displacement terukur", lastDataReceived: hoursAgo(0.03), pointId: points.adrHw01.id },
+      { code: "dev-adr-dump-01", name: "Logger ADR South Dump 01", type: "GNSS", status: "WEAK", battery: 61, signal: 48, firmwareVersion: "2.2.0", sensorStatus: "ADR aktif, sinyal telemetry melemah", lastDataReceived: hoursAgo(0.08), pointId: points.adrDump01.id },
+      { code: "dev-adr-pit-a-01", name: "Logger ADR Pit A 01", type: "GNSS", status: "ONLINE", battery: 89, signal: 83, firmwareVersion: "2.2.0", sensorStatus: "ADR stabil", lastDataReceived: hoursAgo(0.12), pointId: points.adrPitA01.id },
+      { code: "dev-awlr-sp-01", name: "Telemetry AWLR Settling Pond 01", type: "AWLR", status: "ONLINE", battery: 74, signal: 69, firmwareVersion: "1.9.5", sensorStatus: "Level kolam aktif", lastDataReceived: now, pointId: points.awlrSp01.id },
+      { code: "dev-awqr-sp-01", name: "Telemetry AWQR Settling Pond Outlet", type: "WEATHER", status: "ONLINE", battery: 77, signal: 71, firmwareVersion: "1.6.2", sensorStatus: "Kualitas air outlet normal", lastDataReceived: hoursAgo(0.2), pointId: points.awqrSp01.id },
+      { code: "dev-arr-hw-01", name: "Rain Gauge North Highwall", type: "WEATHER", status: "ONLINE", battery: 68, signal: 64, firmwareVersion: "1.7.1", sensorStatus: "Curah hujan tinggi, data aktif", lastDataReceived: hoursAgo(0.05), pointId: points.arrHw01.id },
+      { code: "dev-aws-pit-a-01", name: "Weather Station Pit A", type: "WEATHER", status: "ONLINE", battery: 86, signal: 78, firmwareVersion: "1.7.1", sensorStatus: "Cuaca kerja normal", lastDataReceived: hoursAgo(0.16), pointId: points.awsPitA01.id },
+      { code: "dev-pz-dump-01", name: "Piezometer South Dump 01", type: "WEATHER", status: "WEAK", battery: 57, signal: 52, firmwareVersion: "1.4.8", sensorStatus: "Tekanan air pori meningkat", lastDataReceived: hoursAgo(0.18), pointId: points.pzDump01.id },
+      { code: "dev-dust-haul-01", name: "Dust Sensor Haul Road 01", type: "WEATHER", status: "ONLINE", battery: 72, signal: 66, firmwareVersion: "1.3.4", sensorStatus: "Debu haul road di atas ambang waspada", lastDataReceived: hoursAgo(0.22), pointId: points.dustHaul01.id },
+      { code: "dev-noise-ws-01", name: "Noise Sensor Workshop", type: "WEATHER", status: "ONLINE", battery: 80, signal: 73, firmwareVersion: "1.3.4", sensorStatus: "Kebisingan workshop normal", lastDataReceived: hoursAgo(0.28), pointId: points.noiseWs01.id },
+      { code: "dev-gas-ug-01", name: "Gas Sensor UG Portal 01", type: "WEATHER", status: "ONLINE", battery: 92, signal: 81, firmwareVersion: "1.5.0", sensorStatus: "CO di atas ambang awas", lastDataReceived: hoursAgo(0.04), pointId: points.gasUg01.id },
+      { code: "dev-cctv-hw-01", name: "Camera North Highwall", type: "CCTV", status: "ONLINE", battery: 71, signal: 67, firmwareVersion: "1.8.4", sensorStatus: "Camera highwall online", lastDataReceived: hoursAgo(0.1), pointId: points.cctvHw01.id },
+      { code: "dev-cctv-sp-01", name: "Camera Settling Pond", type: "CCTV", status: "WEAK", battery: 49, signal: 55, firmwareVersion: "1.8.4", sensorStatus: "Camera pond online, panel perlu pengecekan", lastDataReceived: hoursAgo(0.15), pointId: points.cctvSp01.id },
     ],
   });
 
@@ -813,427 +328,102 @@ async function main() {
 
   await prisma.cameraSnapshot.createMany({
     data: [
-      {
-        pointId: cctvPkl.id,
-        capturedAt: hoursAgo(0.1),
-        imageUrl: "/dummy_cctv/tanggul-pkl.jpg",
-        visibility: "Clear",
-        status: "SIAGA",
-        note: "Area tanggul terlihat normal dengan genangan rendah.",
-      },
-      {
-        pointId: cctvPkl.id,
-        capturedAt: hoursAgo(3),
-        imageUrl: "/dummy_cctv/pesisir-pantura.webp",
-        visibility: "Low light",
-        status: "SIAGA",
-        note: "Genangan muncul di sisi akses permukiman saat pasang.",
-      },
-      {
-        pointId: cctvPkl.id,
-        capturedAt: hoursAgo(9),
-        imageUrl: "/dummy_cctv/tanggul-pkl.jpg",
-        visibility: "Rain",
-        status: "WASPADA",
-        note: "Hujan ringan, permukaan jalan masih dapat dilalui.",
-      },
-      {
-        pointId: cctvSmg.id,
-        capturedAt: hoursAgo(0.2),
-        imageUrl: "/dummy_cctv/pelabuhan-smg.jpg",
-        visibility: "Clear",
-        status: "NORMAL",
-        note: "Pelabuhan terlihat normal.",
-      },
-      {
-        pointId: cctvSmg.id,
-        capturedAt: hoursAgo(4),
-        imageUrl: "/dummy_cctv/pelabuhan-smg.jpg",
-        visibility: "Clear",
-        status: "WASPADA",
-        note: "Aktivitas bongkar muat normal, muka air meningkat bertahap.",
-      },
-      {
-        pointId: cctvBtg.id,
-        capturedAt: hoursAgo(0.18),
-        imageUrl: "/dummy_cctv/pesisir-pantura.webp",
-        visibility: "Clear",
-        status: "NORMAL",
-        note: "Pantai Roban bersih, tidak ada genangan di akses utama.",
-      },
-      {
-        pointId: cctvBtg.id,
-        capturedAt: hoursAgo(6),
-        imageUrl: "/dummy_cctv/pesisir-pantura.webp",
-        visibility: "Rain",
-        status: "WASPADA",
-        note: "Hujan lokal, drainase masih mengalir.",
-      },
-      {
-        pointId: cctvKdl.id,
-        capturedAt: hoursAgo(0.22),
-        imageUrl: "/dummy_cctv/tanggul-pkl.jpg",
-        visibility: "Clear",
-        status: "WASPADA",
-        note: "Area muara terpantau ramai dan muka air mendekati ambang awal.",
-      },
-      {
-        pointId: cctvKdl.id,
-        capturedAt: hoursAgo(5),
-        imageUrl: "/dummy_cctv/pelabuhan-smg.jpg",
-        visibility: "Low light",
-        status: "SIAGA",
-        note: "Pantauan malam menunjukkan genangan tipis di tepi jalan inspeksi.",
-      },
+      { pointId: points.cctvHw01.id, capturedAt: hoursAgo(0.1), imageUrl: "/dummy_cctv/north-highwall.jpg", visibility: "Clear", status: "SIAGA", note: "Permukaan bench North Highwall terlihat basah setelah hujan intensitas tinggi." },
+      { pointId: points.cctvHw01.id, capturedAt: hoursAgo(3), imageUrl: "/dummy_cctv/north-highwall.jpg", visibility: "Rain", status: "SIAGA", note: "Drainase bench mengalir deras dan area kerja dibatasi sementara." },
+      { pointId: points.cctvHw01.id, capturedAt: hoursAgo(9), imageUrl: "/dummy_cctv/highwall-night.jpg", visibility: "Low light", status: "WASPADA", note: "Lampu inspeksi aktif, tidak terlihat material jatuh baru." },
+      { pointId: points.cctvSp01.id, capturedAt: hoursAgo(0.15), imageUrl: "/dummy_cctv/settling-pond.jpg", visibility: "Clear", status: "WASPADA", note: "Freeboard Settling Pond menipis dan pompa standby disiapkan." },
+      { pointId: points.cctvSp01.id, capturedAt: hoursAgo(4), imageUrl: "/dummy_cctv/settling-pond.jpg", visibility: "Cloudy", status: "WASPADA", note: "Aliran masuk dari drainase Pit A meningkat bertahap." },
+      { pointId: points.cctvSp01.id, capturedAt: hoursAgo(8), imageUrl: "/dummy_cctv/pond-outlet.jpg", visibility: "Clear", status: "NORMAL", note: "Outlet pond stabil dan tidak ada luapan di spillway." },
     ],
   });
 
   await prisma.alarm.createMany({
     data: [
-      {
-        code: "alm-1034",
-        type: "Rob Risk Alert",
-        areaId: pekalongan.id,
-        pointId: gnssPkl.id,
-        status: "AWAS",
-        state: "OPEN",
-        occurredAt: hoursAgo(0.17),
-        message: "Kombinasi laju penurunan tinggi dan prediksi pasang malam.",
-      },
-      {
-        code: "alm-1033",
-        type: "Water Level Alert",
-        areaId: pekalongan.id,
-        pointId: awlrPkl.id,
-        status: "SIAGA",
-        state: "IN_PROGRESS",
-        occurredAt: hoursAgo(0.3),
-        message: "Muka air bergerak menuju ambang waspada.",
-      },
-      {
-        code: "alm-1032",
-        type: "Battery Low",
-        areaId: pekalongan.id,
-        pointId: cctvPkl.id,
-        status: "WASPADA",
-        state: "OPEN",
-        occurredAt: hoursAgo(0.73),
-        message: "Logger CCTV berada di 24 persen baterai.",
-      },
-      {
-        code: "alm-1031",
-        type: "Water Level Alert",
-        areaId: kendal.id,
-        pointId: awlrKdl.id,
-        status: "SIAGA",
-        state: "OPEN",
-        occurredAt: hoursAgo(1.15),
-        message: "Muka air AWLR Kendal sudah melewati ambang waspada.",
-      },
-      {
-        code: "alm-1030",
-        type: "Rob Risk Alert",
-        areaId: batang.id,
-        pointId: gnssBtg.id,
-        status: "SIAGA",
-        state: "IN_PROGRESS",
-        occurredAt: hoursAgo(1.6),
-        message: "Laju penurunan Batang meningkat dan pasang berikutnya masuk jam rawan.",
-      },
-      {
-        code: "alm-1029",
-        type: "Signal Weak",
-        areaId: kendal.id,
-        pointId: gnssKdl.id,
-        status: "WASPADA",
-        state: "OPEN",
-        occurredAt: hoursAgo(2.2),
-        message: "Sinyal telemetry GNSS Kendal turun di bawah 50 persen.",
-      },
-      {
-        code: "alm-1028",
-        type: "Water Level Alert",
-        areaId: semarang.id,
-        pointId: awlrSmg.id,
-        status: "WASPADA",
-        state: "RESOLVED",
-        occurredAt: hoursAgo(7.5),
-        resolvedAt: hoursAgo(4.8),
-        resolutionNote: "Puncak pasang selesai dan muka air turun di bawah ambang.",
-        message: "Muka air Tide SMG-01 sempat menyentuh ambang waspada.",
-      },
-      {
-        code: "alm-1027",
-        type: "Device Offline",
-        areaId: demak.id,
-        pointId: gnssDmk.id,
-        status: "SIAGA",
-        state: "IN_PROGRESS",
-        occurredAt: hoursAgo(9),
-        message: "Logger GNSS DMK-03 masuk mode maintenance dan belum mengirim data baru.",
-      },
-      {
-        code: "alm-1026",
-        type: "Camera Health",
-        areaId: kendal.id,
-        pointId: cctvKdl.id,
-        status: "WASPADA",
-        state: "OPEN",
-        occurredAt: hoursAgo(11),
-        message: "Panel surya CCTV Kali Bodri perlu pengecekan karena baterai turun.",
-      },
+      { code: "alm-mine-1042", type: "Slope Movement Alert", areaId: areaByKey["area-north-highwall"].id, pointId: points.adrHw01.id, status: "SIAGA", state: "OPEN", occurredAt: hoursAgo(0.17), message: "Pergerakan North Highwall melewati ambang siaga setelah hujan intensitas tinggi." },
+      { code: "alm-mine-1041", type: "Water Storage Alert", areaId: areaByKey["area-settling-pond"].id, pointId: points.awlrSp01.id, status: "WASPADA", state: "IN_PROGRESS", occurredAt: hoursAgo(0.3), message: "Level Settling Pond mendekati batas operasi aman." },
+      { code: "alm-mine-1040", type: "Gas Exposure Alert", areaId: areaByKey["area-tailing-dam"].id, pointId: points.gasUg01.id, status: "AWAS", state: "OPEN", occurredAt: hoursAgo(0.42), message: "Gas Sensor UG Portal 01 mendeteksi CO di atas ambang awas." },
+      { code: "alm-mine-1039", type: "Pore Pressure Alert", areaId: areaByKey["area-south-dump"].id, pointId: points.pzDump01.id, status: "WASPADA", state: "OPEN", occurredAt: hoursAgo(1.1), message: "Tekanan air pori South Dump meningkat dan perlu inspeksi geoteknik." },
+      { code: "alm-mine-1038", type: "Dust Exposure Alert", areaId: areaByKey["area-pit-b"].id, pointId: points.dustHaul01.id, status: "WASPADA", state: "IN_PROGRESS", occurredAt: hoursAgo(2.2), message: "Konsentrasi debu haul road melewati ambang waspada saat lalu lintas unit meningkat." },
+      { code: "alm-mine-1037", type: "Camera Health", areaId: areaByKey["area-settling-pond"].id, pointId: points.cctvSp01.id, status: "WASPADA", state: "OPEN", occurredAt: hoursAgo(4.5), message: "Panel kamera Settling Pond perlu pengecekan karena baterai turun." },
+      { code: "alm-mine-1036", type: "Rainfall Alert", areaId: areaByKey["area-north-highwall"].id, pointId: points.arrHw01.id, status: "SIAGA", state: "RESOLVED", occurredAt: hoursAgo(7.5), resolvedAt: hoursAgo(3.8), resolutionNote: "Intensitas hujan turun dan inspeksi visual selesai tanpa temuan retakan baru.", message: "ARR North Highwall mencatat curah hujan tinggi selama shift malam." },
     ],
   });
 
   await prisma.event.createMany({
     data: [
-      {
-        title: "Validasi genangan Pekalongan",
-        areaId: pekalongan.id,
-        status: "AWAS",
-        state: "OPEN",
-        occurredAt: hoursAgo(0.45),
-        note: "Operator perlu verifikasi lapangan untuk prediksi rob 21.00-23.00.",
-      },
-      {
-        title: "Patroli tanggul Kendal",
-        areaId: kendal.id,
-        status: "SIAGA",
-        state: "IN_PROGRESS",
-        occurredAt: hoursAgo(2.4),
-        note: "Tim teknis mengecek akses muara dan kondisi panel CCTV.",
-      },
-      {
-        title: "Kenaikan muka air Batang",
-        areaId: batang.id,
-        status: "WASPADA",
-        state: "OPEN",
-        occurredAt: hoursAgo(3.1),
-        note: "AWLR Roban mendekati ambang siaga saat pasang sore.",
-      },
-      {
-        title: "Pasang Semarang selesai",
-        areaId: semarang.id,
-        status: "WASPADA",
-        state: "RESOLVED",
-        occurredAt: hoursAgo(8),
-        note: "Muka air turun dan CCTV pelabuhan kembali normal.",
-      },
-      {
-        title: "Kalibrasi GNSS Sayung",
-        areaId: demak.id,
-        status: "SIAGA",
-        state: "IN_PROGRESS",
-        occurredAt: hoursAgo(10),
-        note: "Maintenance logger dilakukan setelah telemetry tidak stabil.",
-      },
+      { title: "Inspeksi North Highwall", areaId: areaByKey["area-north-highwall"].id, status: "SIAGA", state: "OPEN", occurredAt: hoursAgo(0.45), note: "Operator membatasi akses bench utara dan meminta inspeksi geoteknik sebelum hauling dilanjutkan." },
+      { title: "Kontrol level Settling Pond", areaId: areaByKey["area-settling-pond"].id, status: "WASPADA", state: "IN_PROGRESS", occurredAt: hoursAgo(1.7), note: "Pompa tambahan disiapkan untuk menjaga freeboard dalam batas operasi." },
+      { title: "Ventilasi area UG Portal", areaId: areaByKey["area-tailing-dam"].id, status: "AWAS", state: "OPEN", occurredAt: hoursAgo(2.1), note: "Area portal dikosongkan sementara sampai pembacaan gas kembali aman." },
+      { title: "Pemeriksaan South Dump", areaId: areaByKey["area-south-dump"].id, status: "WASPADA", state: "IN_PROGRESS", occurredAt: hoursAgo(4.2), note: "Tim geoteknik memeriksa drainase toe dump dan data piezometer." },
+      { title: "Penyiraman haul road", areaId: areaByKey["area-pit-b"].id, status: "WASPADA", state: "RESOLVED", occurredAt: hoursAgo(8), note: "Water truck ditambah di jalur angkut sampai paparan debu turun." },
     ],
   });
 
   await prisma.maintenanceLog.createMany({
     data: [
-      {
-        deviceId: getDeviceId("dev-cctv-slamaran"),
-        technician: "Tim Pekalongan",
-        scheduledAt: new Date("2026-05-20T02:00:00.000Z"),
-        note: "Cek panel surya dan baterai cadangan.",
-        state: "OPEN",
-      },
-      {
-        deviceId: getDeviceId("dev-gnss-dmk"),
-        technician: "Tim Demak",
-        scheduledAt: new Date("2026-05-19T03:00:00.000Z"),
-        note: "Kalibrasi antena dan pengecekan koneksi logger.",
-        state: "IN_PROGRESS",
-      },
-      {
-        deviceId: getDeviceId("dev-gnss-kdl"),
-        technician: "Tim Kendal",
-        scheduledAt: new Date("2026-05-20T04:00:00.000Z"),
-        note: "Pengecekan modem telemetry dan arah antena GNSS.",
-        state: "OPEN",
-      },
-      {
-        deviceId: getDeviceId("dev-awlr-kdl"),
-        technician: "Tim Kendal",
-        scheduledAt: new Date("2026-05-21T02:30:00.000Z"),
-        note: "Kalibrasi sensor pressure dan pembersihan rumah sensor.",
-        state: "OPEN",
-      },
-      {
-        deviceId: getDeviceId("dev-awlr-smg"),
-        technician: "Tim Semarang",
-        scheduledAt: new Date("2026-05-18T08:00:00.000Z"),
-        note: "Pengecekan tide gauge setelah event pasang tinggi.",
-        state: "RESOLVED",
-      },
-      {
-        deviceId: getDeviceId("dev-cctv-kdl"),
-        technician: "Tim Kendal",
-        scheduledAt: new Date("2026-05-19T09:00:00.000Z"),
-        note: "Cek panel surya dan bersihkan housing kamera.",
-        state: "IN_PROGRESS",
-      },
-      {
-        deviceId: getDeviceId("dev-cctv-btg"),
-        technician: "Tim Batang",
-        scheduledAt: new Date("2026-05-22T02:00:00.000Z"),
-        note: "Audit kualitas gambar dan sudut pantau Roban.",
-        state: "OPEN",
-      },
+      { deviceId: getDeviceId("dev-cctv-sp-01"), technician: "Teknisi Instrumentasi", scheduledAt: new Date("2026-05-20T02:00:00.000Z"), note: "Cek panel surya, baterai cadangan, dan sudut pantau Settling Pond.", state: "OPEN" },
+      { deviceId: getDeviceId("dev-pz-dump-01"), technician: "Teknisi Geoteknik", scheduledAt: new Date("2026-05-19T03:00:00.000Z"), note: "Kalibrasi transducer piezometer dan validasi elevasi casing.", state: "IN_PROGRESS" },
+      { deviceId: getDeviceId("dev-adr-dump-01"), technician: "Teknisi Instrumentasi", scheduledAt: new Date("2026-05-20T04:00:00.000Z"), note: "Pengecekan modem telemetry dan arah antena ADR South Dump.", state: "OPEN" },
+      { deviceId: getDeviceId("dev-gas-ug-01"), technician: "Tim K3 Tambang", scheduledAt: new Date("2026-05-19T05:30:00.000Z"), note: "Bump test sensor CO dan verifikasi alarm lokal.", state: "OPEN" },
+      { deviceId: getDeviceId("dev-arr-hw-01"), technician: "Teknisi Instrumentasi", scheduledAt: new Date("2026-05-18T08:00:00.000Z"), note: "Pembersihan corong ARR setelah hujan lebat.", state: "RESOLVED" },
+      { deviceId: getDeviceId("dev-dust-haul-01"), technician: "Tim Lingkungan", scheduledAt: new Date("2026-05-22T02:00:00.000Z"), note: "Audit inlet sensor debu dan kalibrasi pembacaan PM10.", state: "OPEN" },
     ],
   });
 
   await prisma.threshold.createMany({
     data: [
-      { id: "subsidence", metric: "Laju penurunan tanah", normal: "< 2 cm/tahun", waspada: "2-4 cm/tahun", siaga: "4-7 cm/tahun", awas: "> 7 cm/tahun" },
-      { id: "water-level", metric: "Muka air laut", normal: "< 1.40 m", waspada: "1.60 m", siaga: "1.80 m", awas: "2.00 m" },
-      { id: "battery", metric: "Baterai logger", normal: "> 60%", waspada: "40-60%", siaga: "25-40%", awas: "< 25%" },
+      { id: "deformation", metric: "Pergerakan lereng", normal: "< 10 mm/hari", waspada: "10-25 mm/hari", siaga: "25-50 mm/hari", awas: "> 50 mm/hari" },
+      { id: "rainfall", metric: "Curah hujan 24 jam", normal: "< 50 mm", waspada: "50-75 mm", siaga: "75-100 mm", awas: "> 100 mm" },
+      { id: "pore-pressure", metric: "Tekanan air pori", normal: "< 80 kPa", waspada: "80-120 kPa", siaga: "120-160 kPa", awas: "> 160 kPa" },
+      { id: "water-level", metric: "Level air kolam/sump", normal: "< 3.00 m", waspada: "3.00 m", siaga: "3.35 m", awas: "3.65 m" },
+      { id: "gas", metric: "Gas area risiko", normal: "< 25 ppm CO", waspada: "25-50 ppm CO", siaga: "50-70 ppm CO", awas: "> 70 ppm CO" },
     ],
   });
 
   await prisma.pointThreshold.createMany({
     data: [
-      {
-        pointId: gnssPkl.id,
-        parameter: "velocity",
-        unit: "cm/tahun",
-        normal: 2,
-        waspada: 4,
-        siaga: 7,
-        awas: 8,
-      },
-      {
-        pointId: gnssSmg.id,
-        parameter: "velocity",
-        unit: "cm/tahun",
-        normal: 2,
-        waspada: 4,
-        siaga: 5.5,
-        awas: 7,
-      },
-      {
-        pointId: gnssDmk.id,
-        parameter: "velocity",
-        unit: "cm/tahun",
-        normal: 1.5,
-        waspada: 3,
-        siaga: 5,
-        awas: 7,
-      },
-      {
-        pointId: awlrPkl.id,
-        parameter: "waterLevel",
-        unit: "m",
-        normal: 1.4,
-        waspada: 1.6,
-        siaga: 1.8,
-        awas: 2,
-      },
-      {
-        pointId: awlrSmg.id,
-        parameter: "waterLevel",
-        unit: "m",
-        normal: 1.35,
-        waspada: 1.55,
-        siaga: 1.75,
-        awas: 1.95,
-      },
-      {
-        pointId: gnssBtg.id,
-        parameter: "velocity",
-        unit: "cm/tahun",
-        normal: 1.8,
-        waspada: 3.5,
-        siaga: 5.5,
-        awas: 7,
-      },
-      {
-        pointId: gnssKdl.id,
-        parameter: "velocity",
-        unit: "cm/tahun",
-        normal: 1.5,
-        waspada: 3,
-        siaga: 5.2,
-        awas: 7,
-      },
-      {
-        pointId: awlrBtg.id,
-        parameter: "waterLevel",
-        unit: "m",
-        normal: 1.3,
-        waspada: 1.5,
-        siaga: 1.7,
-        awas: 1.9,
-      },
-      {
-        pointId: awlrKdl.id,
-        parameter: "waterLevel",
-        unit: "m",
-        normal: 1.32,
-        waspada: 1.52,
-        siaga: 1.7,
-        awas: 1.92,
-      },
+      { pointId: points.adrHw01.id, parameter: "displacement", unit: "mm", normal: 10, waspada: 25, siaga: 40, awas: 55 },
+      { pointId: points.adrDump01.id, parameter: "displacement", unit: "mm", normal: 10, waspada: 25, siaga: 45, awas: 60 },
+      { pointId: points.adrPitA01.id, parameter: "displacement", unit: "mm", normal: 10, waspada: 25, siaga: 45, awas: 60 },
+      { pointId: points.awlrSp01.id, parameter: "waterLevel", unit: "m", normal: 2.8, waspada: 3, siaga: 3.35, awas: 3.65 },
+      { pointId: points.awqrSp01.id, parameter: "tss", unit: "mg/L", normal: 100, waspada: 150, siaga: 200, awas: 250 },
+      { pointId: points.arrHw01.id, parameter: "rainfall24h", unit: "mm", normal: 50, waspada: 75, siaga: 100, awas: 125 },
+      { pointId: points.awsPitA01.id, parameter: "windSpeed", unit: "m/s", normal: 8, waspada: 12, siaga: 16, awas: 20 },
+      { pointId: points.pzDump01.id, parameter: "porePressure", unit: "kPa", normal: 80, waspada: 120, siaga: 160, awas: 200 },
+      { pointId: points.dustHaul01.id, parameter: "pm10", unit: "ug/m3", normal: 75, waspada: 125, siaga: 175, awas: 250 },
+      { pointId: points.noiseWs01.id, parameter: "noise", unit: "dBA", normal: 70, waspada: 85, siaga: 95, awas: 105 },
+      { pointId: points.gasUg01.id, parameter: "co", unit: "ppm", normal: 25, waspada: 50, siaga: 70, awas: 100 },
+      { pointId: points.cctvHw01.id, parameter: "visibility", unit: "score", normal: 90, waspada: 70, siaga: 50, awas: 30 },
+      { pointId: points.cctvSp01.id, parameter: "visibility", unit: "score", normal: 90, waspada: 70, siaga: 50, awas: 30 },
     ],
   });
 
   await prisma.riskWeight.createMany({
     data: [
-      { id: "subsidence-rate", metric: "Laju penurunan tanah", weight: 35, source: "GNSS" },
-      { id: "water-threshold", metric: "Muka air terhadap ambang", weight: 30, source: "AWLR/Tide" },
-      { id: "rob-history", metric: "Riwayat kejadian rob", weight: 15, source: "Event historis" },
-      { id: "rainfall", metric: "Curah hujan", weight: 10, source: "Sensor cuaca opsional" },
-      { id: "device-status", metric: "Status perangkat", weight: 10, source: "Logger" },
+      { id: "slope-movement", metric: "Pergerakan lereng", weight: 35, source: "ADR/Deformation" },
+      { id: "rainfall-intensity", metric: "Curah hujan", weight: 20, source: "ARR/AWS" },
+      { id: "pore-pressure", metric: "Tekanan air pori", weight: 20, source: "Piezometer" },
+      { id: "water-storage", metric: "Level air sump/pond", weight: 15, source: "AWLR" },
+      { id: "environmental-exposure", metric: "Gas, debu, dan kebisingan", weight: 10, source: "Gas/Dust/Noise" },
     ],
   });
 
   await prisma.reportTemplate.createMany({
     data: [
-      { id: "daily", name: "Laporan Harian", period: "Harian", audience: "Operator dan teknis lapangan", formats: ["PDF", "CSV", "Excel"] },
-      { id: "monthly", name: "Laporan Bulanan", period: "Bulanan", audience: "Pemda, kementerian, stakeholder", formats: ["PDF", "Excel"] },
-      { id: "event", name: "Laporan Event", period: "Per kejadian", audience: "Tim respons dan dokumentasi proyek", formats: ["PDF", "PNG", "JSON"] },
-      { id: "executive", name: "Executive Summary", period: "Mingguan/Bulanan", audience: "Pimpinan dan stakeholder", formats: ["PDF"] },
+      { id: "daily", name: "Laporan Harian Operasi Tambang", period: "Harian", audience: "Operator, geoteknik, dan K3 tambang", formats: ["PDF", "CSV", "Excel"] },
+      { id: "monthly", name: "Laporan Bulanan Monitoring Tambang", period: "Bulanan", audience: "Manajemen site dan instansi pengawas", formats: ["PDF", "Excel"] },
+      { id: "event", name: "Laporan Event Geoteknik/K3", period: "Per kejadian", audience: "Tim respons, geoteknik, dan dokumentasi operasi", formats: ["PDF", "PNG", "JSON"] },
+      { id: "executive", name: "Executive Summary Demo Mining Site", period: "Mingguan/Bulanan", audience: "Pimpinan dan viewer manajemen", formats: ["PDF"] },
     ],
   });
 
   await prisma.report.createMany({
     data: [
-      {
-        templateId: "daily",
-        areaName: "Pantura Jawa Tengah",
-        status: "READY",
-        downloadUrl: "/api/reports/daily",
-        generatedAt: now,
-      },
-      {
-        templateId: "event",
-        areaName: "Pekalongan Utara",
-        status: "READY",
-        downloadUrl: "/api/reports/event?area=pekalongan-utara",
-        generatedAt: hoursAgo(1.5),
-      },
-      {
-        templateId: "daily",
-        areaName: "Kendal Kaliwungu",
-        status: "READY",
-        downloadUrl: "/api/reports/daily?area=kendal-kaliwungu",
-        generatedAt: hoursAgo(3),
-      },
-      {
-        templateId: "monthly",
-        areaName: "Semarang Utara",
-        status: "QUEUED",
-        downloadUrl: null,
-        generatedAt: hoursAgo(6),
-      },
-      {
-        templateId: "executive",
-        areaName: "Pantura Jawa Tengah",
-        status: "READY",
-        downloadUrl: "/api/reports/executive",
-        generatedAt: daysAgo(2),
-      },
+      { templateId: "daily", areaName: "Demo Mining Site", status: "READY", downloadUrl: "/api/reports/daily", generatedAt: now },
+      { templateId: "event", areaName: "North Highwall", status: "READY", downloadUrl: "/api/reports/event?area=north-highwall", generatedAt: hoursAgo(1.5) },
+      { templateId: "daily", areaName: "Settling Pond", status: "READY", downloadUrl: "/api/reports/daily?area=settling-pond", generatedAt: hoursAgo(3) },
+      { templateId: "monthly", areaName: "South Dump", status: "QUEUED", downloadUrl: null, generatedAt: hoursAgo(6) },
+      { templateId: "executive", areaName: "Demo Mining Site", status: "READY", downloadUrl: "/api/reports/executive", generatedAt: daysAgo(2) },
     ],
   });
 }
