@@ -31,9 +31,16 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import type { MonitoringPoint, PointType, RiskStatus } from "@/lib/types"
 
+const miningSiteCenter: [number, number] = [-1.232, 116.817]
+
 const miningSiteBounds: LatLngBoundsExpression = [
-  [-7.08, 109.55],
-  [-6.72, 110.75],
+  [-1.265, 116.775],
+  [-1.195, 116.86],
+]
+
+const miningSiteMaxBounds: LatLngBoundsExpression = [
+  [-1.32, 116.72],
+  [-1.16, 116.92],
 ]
 
 const riskColors: Record<RiskStatus, string> = {
@@ -54,21 +61,29 @@ const pointTypes: PointType[] = ["GNSS", "AWLR", "CCTV", "WEATHER"]
 
 const riskStatuses: RiskStatus[] = ["Awas", "Siaga", "Waspada", "Normal"]
 
-const infrastructurePoints: {
+const demoInfrastructure: {
   name: string
   position: [number, number]
 }[] = [
   {
-    name: "Pelabuhan Tanjung Emas",
-    position: [-6.944, 110.423],
+    name: "North Highwall Crest",
+    position: [-1.214, 116.812],
   },
   {
-    name: "Kawasan Tanggul Pekalongan",
-    position: [-6.858, 109.683],
+    name: "Pit A Haul Road",
+    position: [-1.222, 116.821],
   },
   {
-    name: "Koridor Tambak Sayung",
-    position: [-6.885, 110.62],
+    name: "South Dump Toe",
+    position: [-1.233, 116.798],
+  },
+  {
+    name: "Settling Pond Pump Bay",
+    position: [-1.243, 116.836],
+  },
+  {
+    name: "UG Portal Gas Station",
+    position: [-1.251, 116.807],
   },
 ]
 
@@ -209,13 +224,11 @@ export default function LeafletRiskMap({
       <MapContainer
         bounds={miningSiteBounds}
         boundsOptions={{ padding: [26, 26] }}
+        center={miningSiteCenter}
         className="h-full w-full"
-        maxBounds={[
-          [-7.35, 109.2],
-          [-6.45, 111.1],
-        ]}
+        maxBounds={miningSiteMaxBounds}
         maxZoom={16}
-        minZoom={9}
+        minZoom={12}
         scrollWheelZoom
       >
         <TileLayer
@@ -223,7 +236,7 @@ export default function LeafletRiskMap({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         {layers.infrastructure &&
-          infrastructurePoints.map((item) => (
+          demoInfrastructure.map((item) => (
             <CircleMarker
               center={item.position}
               key={item.name}
