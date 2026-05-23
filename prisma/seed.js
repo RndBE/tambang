@@ -328,12 +328,12 @@ async function main() {
 
   await prisma.cameraSnapshot.createMany({
     data: [
-      { pointId: points.cctvHw01.id, capturedAt: hoursAgo(0.1), imageUrl: "/dummy_cctv/north-highwall.jpg", visibility: "Clear", status: "SIAGA", note: "Permukaan bench North Highwall terlihat basah setelah hujan intensitas tinggi." },
-      { pointId: points.cctvHw01.id, capturedAt: hoursAgo(3), imageUrl: "/dummy_cctv/north-highwall.jpg", visibility: "Rain", status: "SIAGA", note: "Drainase bench mengalir deras dan area kerja dibatasi sementara." },
-      { pointId: points.cctvHw01.id, capturedAt: hoursAgo(9), imageUrl: "/dummy_cctv/highwall-night.jpg", visibility: "Low light", status: "WASPADA", note: "Lampu inspeksi aktif, tidak terlihat material jatuh baru." },
-      { pointId: points.cctvSp01.id, capturedAt: hoursAgo(0.15), imageUrl: "/dummy_cctv/settling-pond.jpg", visibility: "Clear", status: "WASPADA", note: "Freeboard Settling Pond menipis dan pompa standby disiapkan." },
-      { pointId: points.cctvSp01.id, capturedAt: hoursAgo(4), imageUrl: "/dummy_cctv/settling-pond.jpg", visibility: "Cloudy", status: "WASPADA", note: "Aliran masuk dari drainase Pit A meningkat bertahap." },
-      { pointId: points.cctvSp01.id, capturedAt: hoursAgo(8), imageUrl: "/dummy_cctv/pond-outlet.jpg", visibility: "Clear", status: "NORMAL", note: "Outlet pond stabil dan tidak ada luapan di spillway." },
+      { pointId: points.cctvHw01.id, capturedAt: hoursAgo(0.1), imageUrl: null, visibility: "Clear", status: "SIAGA", note: "Permukaan bench North Highwall terlihat basah setelah hujan intensitas tinggi." },
+      { pointId: points.cctvHw01.id, capturedAt: hoursAgo(3), imageUrl: null, visibility: "Rain", status: "SIAGA", note: "Drainase bench mengalir deras dan area kerja dibatasi sementara." },
+      { pointId: points.cctvHw01.id, capturedAt: hoursAgo(9), imageUrl: null, visibility: "Low light", status: "WASPADA", note: "Lampu inspeksi aktif, tidak terlihat material jatuh baru." },
+      { pointId: points.cctvSp01.id, capturedAt: hoursAgo(0.15), imageUrl: null, visibility: "Clear", status: "WASPADA", note: "Freeboard Settling Pond menipis dan pompa standby disiapkan." },
+      { pointId: points.cctvSp01.id, capturedAt: hoursAgo(4), imageUrl: null, visibility: "Cloudy", status: "WASPADA", note: "Aliran masuk dari drainase Pit A meningkat bertahap." },
+      { pointId: points.cctvSp01.id, capturedAt: hoursAgo(8), imageUrl: null, visibility: "Clear", status: "NORMAL", note: "Outlet pond stabil dan tidak ada luapan di spillway." },
     ],
   });
 
