@@ -4,6 +4,7 @@ import { useMemo, useState } from "react"
 import L, { type LatLngBoundsExpression } from "leaflet"
 import {
   Camera,
+  CloudSun,
   EyeIcon,
   LayersIcon,
   RadioTower,
@@ -247,7 +248,9 @@ export default function LeafletRiskMap({
               ? RadioTower
               : point.type === "AWLR"
                 ? Waves
-                : Camera
+                : point.type === "WEATHER"
+                  ? CloudSun
+                  : Camera
 
           return (
             <Marker
@@ -378,6 +381,10 @@ export default function LeafletRiskMap({
         <span className="flex items-center gap-1.5">
           <Camera className="size-3.5 text-slate-700" />
           CCTV
+        </span>
+        <span className="flex items-center gap-1.5">
+          <CloudSun className="size-3.5 text-slate-700" />
+          Weather
         </span>
         <span className="flex items-center gap-1.5 border-l pl-3 text-muted-foreground">
           <EyeIcon className="size-3.5" />
