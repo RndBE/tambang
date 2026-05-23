@@ -8,11 +8,10 @@ export default function PetaJaringanTambang3DPage() {
     <AppShell
       activePath="/peta-jaringan-tambang"
       contentPadding={false}
+      fullBleed
       title="Peta Tambang 3D"
     >
-      <div className="p-4">
-        <MineNetwork3DView />
-      </div>
+      <MineNetwork3DView />
     </AppShell>
   )
 }

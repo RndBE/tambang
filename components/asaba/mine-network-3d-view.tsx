@@ -103,7 +103,7 @@ export function MineNetwork3DView() {
     .sort((a, b) => (a.status === "danger" ? -1 : 1) - (b.status === "danger" ? -1 : 1))
 
   return (
-    <section className="relative h-[calc(100vh-5rem)] min-h-[720px] overflow-hidden rounded-lg border bg-slate-950">
+    <section className="relative h-[calc(100svh-var(--header-height))] min-h-0 overflow-hidden bg-slate-950">
       <MineNetwork3DDeck
         selectedId={selectedId}
         onSelect={setSelectedId}

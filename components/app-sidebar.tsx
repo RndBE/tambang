@@ -71,15 +71,15 @@ function getData(activePath = "/") {
             url: "/area-tambang",
             isActive: activePath.startsWith("/area-tambang"),
           },
+          {
+            title: "CCTV Monitoring",
+            url: "/cctv",
+            isActive: activePath === "/cctv",
+          },
           // {
           //   title: "Sensor Geoteknik",
           //   url: "/analisa-data",
           //   isActive: activePath === "/analisa-data",
-          // },
-          // {
-          //   title: "CCTV Monitoring",
-          //   url: "/cctv",
-          //   isActive: activePath === "/cctv",
           // },
         ],
       },

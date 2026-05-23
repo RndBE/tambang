@@ -209,7 +209,7 @@ export function MineNetworkMapOverlay() {
     .sort((a, b) => (a.status === "danger" ? -1 : 1) - (b.status === "danger" ? -1 : 1))
 
   return (
-    <section className="relative h-[calc(100vh-5rem)] min-h-[720px] overflow-hidden rounded-lg border bg-[#e8eef0]">
+    <section className="relative h-[calc(100svh-var(--header-height))] min-h-0 overflow-hidden bg-[#e8eef0]">
       <div className="absolute inset-0">
         <svg
           className="h-full w-full"

@@ -8,11 +8,10 @@ export default function PetaJaringanTambangPage() {
     <AppShell
       activePath="/peta-jaringan-tambang"
       contentPadding={false}
+      fullBleed
       title="Peta Tambang"
     >
-      <div className="p-4">
-        <MineNetworkMapOverlay />
-      </div>
+      <MineNetworkMapOverlay />
     </AppShell>
   )
 }

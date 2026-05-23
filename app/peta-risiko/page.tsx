@@ -8,11 +8,10 @@ export default function PetaRisikoPage() {
     <AppShell
       activePath="/peta-risiko"
       contentPadding={false}
+      fullBleed
       title="Peta Monitoring Tambang"
     >
-      <div className="p-4">
-        <MineNetwork3DView />
-      </div>
+      <MineNetwork3DView />
     </AppShell>
   )
 }
