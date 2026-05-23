@@ -3,21 +3,14 @@
 import * as React from "react"
 import Image from "next/image"
 import {
-  ActivityIcon,
   BellIcon,
-  CameraIcon,
-  DatabaseIcon,
-  FileChartColumnIcon,
   GaugeIcon,
-  MapIcon,
   RadioTowerIcon,
   Settings2Icon,
-  WavesIcon,
 } from "lucide-react"
 
 import logoBeacon from "@/logo_beacon.png"
 import { NavMain } from "@/components/nav-main"
-import { NavProjects } from "@/components/nav-projects"
 import { NavUser } from "@/components/nav-user"
 import {
   Sidebar,
@@ -52,6 +45,8 @@ function getData(activePath = "/") {
         isActive: isActive(activePath, [
           "/",
           "/peta-risiko",
+          "/peta-jaringan-tambang",
+          "/area-tambang",
           "/analisa-data",
           "/cctv",
         ]),
@@ -67,15 +62,25 @@ function getData(activePath = "/") {
             isActive: activePath === "/peta-risiko",
           },
           {
-            title: "Sensor Geoteknik",
-            url: "/analisa-data",
-            isActive: activePath === "/analisa-data",
+            title: "Peta Tambang",
+            url: "/peta-jaringan-tambang",
+            isActive: activePath === "/peta-jaringan-tambang",
           },
           {
-            title: "CCTV Monitoring",
-            url: "/cctv",
-            isActive: activePath === "/cctv",
+            title: "Area Tambang",
+            url: "/area-tambang",
+            isActive: activePath.startsWith("/area-tambang"),
           },
+          // {
+          //   title: "Sensor Geoteknik",
+          //   url: "/analisa-data",
+          //   isActive: activePath === "/analisa-data",
+          // },
+          // {
+          //   title: "CCTV Monitoring",
+          //   url: "/cctv",
+          //   isActive: activePath === "/cctv",
+          // },
         ],
       },
       {
@@ -138,44 +143,6 @@ function getData(activePath = "/") {
         ],
       },
     ],
-    projects: [
-      {
-        name: "Data Logger",
-        url: "/perangkat",
-        icon: <DatabaseIcon />,
-        isActive: activePath === "/perangkat",
-      },
-      {
-        name: "Air & Cuaca",
-        url: "/analisa-data?sensor=awlr",
-        icon: <WavesIcon />,
-        isActive: activePath === "/awlr",
-      },
-      {
-        name: "Peta Monitoring",
-        url: "/peta-risiko",
-        icon: <MapIcon />,
-        isActive: activePath === "/peta-risiko",
-      },
-      {
-        name: "CCTV Monitoring",
-        url: "/cctv",
-        icon: <CameraIcon />,
-        isActive: activePath === "/cctv",
-      },
-      {
-        name: "Export Laporan",
-        url: "/laporan",
-        icon: <FileChartColumnIcon />,
-        isActive: activePath === "/laporan",
-      },
-      {
-        name: "Analisis Risiko",
-        url: "/analisis-risiko",
-        icon: <ActivityIcon />,
-        isActive: activePath === "/analisis-risiko",
-      },
-    ],
   }
 }
 
@@ -219,7 +186,6 @@ export function AppSidebar({
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        {/* <NavProjects label="Akses Cepat" projects={data.projects} /> */}
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={user} />

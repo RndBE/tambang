@@ -1,4 +1,4 @@
-import { MineNetworkMap } from "@/components/asaba/mine-network-map"
+import { MineSatelliteMap } from "@/components/asaba/mine-satellite-map"
 import { AppShell } from "@/components/dashboard/app-shell"
 
 export const dynamic = "force-dynamic"
@@ -10,7 +10,7 @@ export default function PetaJaringanTambangPage() {
       contentPadding={false}
       title="Peta Tambang"
     >
-      <MineNetworkMap />
+      <MineSatelliteMap />
     </AppShell>
   )
 }
