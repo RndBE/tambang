@@ -626,8 +626,8 @@ export default async function AnalisaDataPage({ searchParams }: AnalisaDataPageP
     return (
       <AppShell
         activeArea={summary.activeArea}
-        activePath="/analisa-data"
-        title="Sensor Geoteknik"
+        activePath="/awlr"
+        title="Air & Cuaca"
         updatedAt={summary.updatedAt}
       >
         <div className="grid gap-3">
@@ -698,8 +698,8 @@ export default async function AnalisaDataPage({ searchParams }: AnalisaDataPageP
   return (
     <AppShell
       activeArea={summary.activeArea}
-      activePath="/analisa-data"
-      title="Sensor Geoteknik"
+      activePath="/gnss"
+      title="Deformasi Lereng"
       updatedAt={summary.updatedAt}
     >
       <div className="grid gap-3">
