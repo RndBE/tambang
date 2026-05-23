@@ -1,10 +1,15 @@
 "use client"
 
-import { MineSatelliteMap } from "@/components/asaba/mine-satellite-map"
+import dynamic from "next/dynamic"
 import type { MonitoringPoint } from "@/lib/types"
+
+const MineNetwork3DView = dynamic(
+  () => import("@/components/asaba/mine-network-3d-view").then((m) => ({ default: m.MineNetwork3DView })),
+  { ssr: false }
+)
 
 export function RiskMap({ points }: { points: MonitoringPoint[] }) {
   void points
 
-  return <MineSatelliteMap variant="dashboard" />
+  return <MineNetwork3DView />
 }
