@@ -36,7 +36,7 @@ export default async function LaporanPage() {
     <AppShell
       activeArea={summary.activeArea}
       activePath="/laporan"
-      title="Laporan"
+      title="Laporan Monitoring Tambang"
       updatedAt={summary.updatedAt}
     >
       <div className="grid gap-4">

@@ -28,7 +28,7 @@ export default async function AnalisisRisikoPage() {
     <AppShell
       activeArea={summary.activeArea}
       activePath="/analisis-risiko"
-      title="Analisis Risiko"
+      title="Analisis Risiko Lereng"
       updatedAt={summary.updatedAt}
     >
       <div className="grid gap-4">

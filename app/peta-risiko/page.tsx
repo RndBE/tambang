@@ -12,7 +12,7 @@ export default async function PetaRisikoPage() {
       activeArea={summary.activeArea}
       activePath="/peta-risiko"
       contentPadding={false}
-      title="Peta Risiko Pesisir"
+      title="Peta Monitoring Tambang"
       updatedAt={summary.updatedAt}
     >
       <div

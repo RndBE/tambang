@@ -8,11 +8,11 @@ export async function GET() {
   return Response.json({
     points,
     layers: [
-      "Titik GNSS",
-      "Titik AWLR/Tide",
+      "Titik ADR/Deformasi",
+      "Titik AWLR",
       "Titik CCTV",
-      "Zona Risiko Rob",
-      "Zona Penurunan Tanah",
+      "Sensor Lingkungan",
+      "Zona Risiko Lereng",
       "Infrastruktur Penting",
       "Batas Administrasi",
     ],

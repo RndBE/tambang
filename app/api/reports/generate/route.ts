@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 const reportGenerateSchema = z.object({
   templateId: z.string().min(1).default("daily"),
-  areaName: z.string().min(1).default("Pantura Jawa Tengah"),
+  areaName: z.string().min(1).default("Demo Mining Site"),
 });
 
 export async function POST(request: Request) {

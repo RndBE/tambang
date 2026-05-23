@@ -43,8 +43,8 @@ type DataAnalysisFilterBarProps = {
 };
 
 const modeItems: Array<{ label: string; value: DataAnalysisMode }> = [
-  { label: "GNSS", value: "gnss" },
-  { label: "AWLR", value: "awlr" },
+  { label: "ADR / Deformasi", value: "gnss" },
+  { label: "AWLR / Air Tambang", value: "awlr" },
 ];
 
 const parameterItems: Record<DataAnalysisMode, ParameterOption[]> = {

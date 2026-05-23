@@ -63,6 +63,10 @@ function formatThresholdValue(value: number) {
   }).format(value);
 }
 
+function formatPointType(value: AlarmThresholdSetting["pointType"]) {
+  return value === "GNSS" ? "ADR" : value;
+}
+
 export function AlarmThresholdManager({ thresholds }: AlarmThresholdManagerProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -226,7 +230,7 @@ export function AlarmThresholdManager({ thresholds }: AlarmThresholdManagerProps
                     <TableCell>
                       <div className="font-medium">{setting.pointName}</div>
                       <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                        <Badge variant="outline">{setting.pointType}</Badge>
+                        <Badge variant="outline">{formatPointType(setting.pointType)}</Badge>
                         {setting.area}
                       </div>
                     </TableCell>
@@ -269,7 +273,7 @@ export function AlarmThresholdManager({ thresholds }: AlarmThresholdManagerProps
                 <div className="interactive-tile rounded-lg border bg-muted/30 p-3">
                   <div className="font-medium">{editingSetting.pointName}</div>
                   <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                    <Badge variant="outline">{editingSetting.pointType}</Badge>
+                    <Badge variant="outline">{formatPointType(editingSetting.pointType)}</Badge>
                     {editingSetting.area}
                     <span>{editingSetting.unit}</span>
                   </div>

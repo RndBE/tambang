@@ -142,7 +142,7 @@ export function RiskWeightManager({ weights }: RiskWeightManagerProps) {
         <div>
           <CardTitle>Komponen Skor</CardTitle>
           <CardDescription>
-            CRUD bobot rule-based untuk analisis risiko rob
+            CRUD bobot rule-based untuk analisis risiko lereng tambang
           </CardDescription>
         </div>
         <CardAction className="text-sm font-semibold tabular-nums">
@@ -155,7 +155,7 @@ export function RiskWeightManager({ weights }: RiskWeightManagerProps) {
             <Label htmlFor="risk-metric">Parameter</Label>
             <Input
               id="risk-metric"
-              placeholder="Contoh: Riwayat rob"
+              placeholder="Contoh: Pergerakan lereng"
               value={draft.metric}
               onChange={(event) =>
                 setDraft((current) => ({ ...current, metric: event.target.value }))

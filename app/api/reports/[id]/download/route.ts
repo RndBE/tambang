@@ -158,11 +158,11 @@ async function buildReportRows(report: {
     getDataLoggerFeeds(),
   ]);
   const scopedRiskAreas =
-    report.areaName === "Pantura Jawa Tengah"
+    report.areaName === "Demo Mining Site"
       ? riskAreas
       : riskAreas.filter((area) => area.area === report.areaName);
   const scopedAlarms =
-    report.areaName === "Pantura Jawa Tengah"
+    report.areaName === "Demo Mining Site"
       ? alarms
       : alarms.filter((alarm) => alarm.area === report.areaName);
 
@@ -174,7 +174,7 @@ async function buildReportRows(report: {
       area.status,
       "score",
       String(area.score),
-      `Penurunan ${area.subsidenceRate}; muka air ${area.waterLevel}; jam rawan ${area.nextWindow}`,
+      `Pergerakan ${area.subsidenceRate}; level air ${area.waterLevel}; inspeksi ${area.nextWindow}`,
     ]),
     ...scopedAlarms.map((alarm) => [
       "alarm",
@@ -202,7 +202,7 @@ async function buildReportRows(report: {
     "Ringkasan Risiko",
     ...scopedRiskAreas.map(
       (area) =>
-        `- ${area.area}: ${area.status}, skor ${area.score}, penurunan ${area.subsidenceRate}, muka air ${area.waterLevel}, jam rawan ${area.nextWindow}`,
+        `- ${area.area}: ${area.status}, skor ${area.score}, pergerakan ${area.subsidenceRate}, level air ${area.waterLevel}, inspeksi ${area.nextWindow}`,
     ),
     "",
     "Alarm dan Event",

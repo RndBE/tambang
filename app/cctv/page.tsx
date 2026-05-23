@@ -133,7 +133,7 @@ export default async function CctvPage() {
             <CardHeader className="border-b">
               <CardTitle>Ringkasan Pantauan</CardTitle>
               <CardDescription>
-                {areaCount} area pesisir dalam daftar kamera
+                {areaCount} area tambang dalam daftar kamera
               </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-3">

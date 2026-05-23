@@ -21,7 +21,7 @@ export default async function PerangkatPage() {
     <AppShell
       activeArea={summary.activeArea}
       activePath="/perangkat"
-      title="Perangkat dan Telemetry Logger"
+      title="Perangkat Sensor"
       updatedAt={summary.updatedAt}
     >
       <DeviceManagementPanel

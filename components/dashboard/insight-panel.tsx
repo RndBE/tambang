@@ -50,7 +50,7 @@ type InsightPanelProps = {
 };
 
 export function InsightPanel({ insights, stationName, mode }: InsightPanelProps) {
-  const modeLabel = mode === "gnss" ? "GNSS" : "AWLR";
+  const modeLabel = mode === "gnss" ? "ADR" : "AWLR";
   const dangerCount = insights.filter((i) => i.severity === "danger").length;
   const warningCount = insights.filter((i) => i.severity === "warning").length;
 

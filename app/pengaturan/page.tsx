@@ -39,7 +39,7 @@ export default async function PengaturanPage() {
     <AppShell
       activeArea={summary.activeArea}
       activePath="/pengaturan"
-      title="Pengaturan"
+      title="Pengaturan Mining Monitoring"
       updatedAt={summary.updatedAt}
     >
       <div className="grid gap-4">

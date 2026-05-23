@@ -73,7 +73,7 @@ export async function POST(request: Request) {
 
   const point = await validatePoint(parsed.data.pointId);
   if (!point) {
-    return Response.json({ error: "Titik GNSS/AWLR tidak ditemukan." }, { status: 404 });
+    return Response.json({ error: "Titik ADR/AWLR tidak ditemukan." }, { status: 404 });
   }
 
   const duplicate = await prisma.pointThreshold.findUnique({
@@ -128,7 +128,7 @@ export async function PUT(request: Request) {
 
   const point = await validatePoint(parsed.data.pointId);
   if (!point) {
-    return Response.json({ error: "Titik GNSS/AWLR tidak ditemukan." }, { status: 404 });
+    return Response.json({ error: "Titik ADR/AWLR tidak ditemukan." }, { status: 404 });
   }
 
   const threshold = await prisma.pointThreshold.update({

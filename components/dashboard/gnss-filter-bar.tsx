@@ -62,7 +62,7 @@ export function GnssFilterBar({
     <div className="flex flex-col gap-3 rounded-lg border bg-card p-3 shadow-xs md:flex-row md:items-center md:justify-between">
       <div className="flex items-center gap-2 text-sm font-medium">
         <SlidersHorizontal className="size-4 text-muted-foreground" />
-        Monitoring GNSS
+        Monitoring Deformasi ADR
       </div>
       <div className="grid gap-2 sm:grid-cols-3 md:flex md:items-center">
         <Select
@@ -78,7 +78,7 @@ export function GnssFilterBar({
           <SelectTrigger
             size="sm"
             className="w-full sm:w-[190px] **:data-[slot=select-value]:block **:data-[slot=select-value]:truncate"
-            aria-label="Pilih pos GNSS"
+            aria-label="Pilih titik ADR"
           >
             <SelectValue placeholder="Pilih pos" />
           </SelectTrigger>
@@ -103,7 +103,7 @@ export function GnssFilterBar({
           <SelectTrigger
             size="sm"
             className="w-full sm:w-[150px] **:data-[slot=select-value]:block **:data-[slot=select-value]:truncate"
-            aria-label="Pilih parameter GNSS"
+            aria-label="Pilih parameter deformasi"
           >
             <SelectValue placeholder="Parameter" />
           </SelectTrigger>

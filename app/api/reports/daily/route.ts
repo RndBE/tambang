@@ -32,7 +32,7 @@ export async function GET() {
 
   return new Response(csv, {
     headers: {
-      "Content-Disposition": 'attachment; filename="laporan-harian-pesisir.csv"',
+      "Content-Disposition": 'attachment; filename="laporan-harian-mining-monitoring.csv"',
       "Content-Type": "text/csv; charset=utf-8",
     },
   });
