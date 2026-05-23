@@ -24,28 +24,32 @@ It intentionally does not:
 - Add heavy visualization dependencies.
 
 The existing `/gnss` and `/awlr` route identity bug has already been fixed in commit `625ce85` before this plan.
+The sidebar `projects` / `Akses Cepat` section has been intentionally removed by user request and should not be reintroduced by this plan.
 
 ## File Structure
 
 Create:
 
 - `lib/asaba-dummy.ts`: typed dummy ASABA/ADR/RTS/prism data and helper summaries.
+- `lib/asaba-mine-network.ts`: typed dummy ASABA mine network data and helper summaries for Peta Tambang.
 - `components/asaba/adr-status-cards.tsx`: RTS and ADR status KPI cards.
 - `components/asaba/adr-control-panel.tsx`: local-only simulated control buttons and active job state.
 - `components/asaba/prism-progress-grid.tsx`: prism running progress cards.
+- `components/asaba/mine-network-map.tsx`: interactive dummy Peta Tambang adapted from ASABA mine network UI.
 - `components/asaba/measurement-results-table.tsx`: ADR measurement table with filters handled by page state.
 - `components/asaba/prism-config-table.tsx`: prism target configuration table.
 - `components/asaba/asaba-visualization.tsx`: lightweight dummy 2.5D slope/prism visualization.
 - `components/asaba/rekap-summary.tsx`: rekap KPI cards and summary table.
 - `app/adr-control/page.tsx`: ADR Control page.
 - `app/hasil-pengukuran/page.tsx`: measurement results page.
+- `app/peta-jaringan-tambang/page.tsx`: ASABA-style Peta Tambang page.
 - `app/visualisasi-3d/page.tsx`: dummy 3D visualization page.
 - `app/prism-config/page.tsx`: prism config page.
 - `app/rekap-data/page.tsx`: rekap page.
 
 Modify:
 
-- `components/app-sidebar.tsx`: add ASABA/ADR group and quick links.
+- `components/app-sidebar.tsx`: add ASABA/ADR group in main navigation. Do not add `projects` or quick links.
 - `README.md`: mention ASABA dummy module in Phase 1/2 status.
 - `rancangan_mining_monitoring_system.md`: mention ASABA dummy pages.
 
@@ -319,9 +323,7 @@ git commit -m "feat: add asaba dummy data"
 In the `lucide-react` import, add:
 
 ```ts
-ClipboardListIcon,
 PowerIcon,
-RouteIcon,
 ```
 
 - [ ] **Step 2: Add ASABA paths to `getData()`**
@@ -336,6 +338,7 @@ Add a new `navMain` item after the existing `Sensor` group:
   isActive: isActive(activePath, [
     "/adr-control",
     "/hasil-pengukuran",
+    "/peta-jaringan-tambang",
     "/visualisasi-3d",
     "/prism-config",
     "/rekap-data",
@@ -350,6 +353,11 @@ Add a new `navMain` item after the existing `Sensor` group:
       title: "Hasil Pengukuran",
       url: "/hasil-pengukuran",
       isActive: activePath === "/hasil-pengukuran",
+    },
+    {
+      title: "Peta Tambang",
+      url: "/peta-jaringan-tambang",
+      isActive: activePath === "/peta-jaringan-tambang",
     },
     {
       title: "Visualisasi 3D",
@@ -370,30 +378,9 @@ Add a new `navMain` item after the existing `Sensor` group:
 },
 ```
 
-- [ ] **Step 3: Add quick links**
+- [ ] **Step 3: Keep projects removed**
 
-Add these entries near the top of `projects`:
-
-```tsx
-{
-  name: "ADR Control",
-  url: "/adr-control",
-  icon: <PowerIcon />,
-  isActive: activePath === "/adr-control",
-},
-{
-  name: "Prism Config",
-  url: "/prism-config",
-  icon: <RouteIcon />,
-  isActive: activePath === "/prism-config",
-},
-{
-  name: "Rekap ADR",
-  url: "/rekap-data",
-  icon: <ClipboardListIcon />,
-  isActive: activePath === "/rekap-data",
-},
-```
+Do not import `NavProjects`, do not return a `projects` array from `getData()`, and do not render the `Akses Cepat` section. The user explicitly requested that sidebar projects be removed.
 
 - [ ] **Step 4: Run typecheck**
 
@@ -496,6 +483,7 @@ Create `components/asaba/adr-control-panel.tsx` as a client component:
 ```tsx
 "use client";
 
+import type { ElementType } from "react";
 import { useMemo, useState } from "react";
 import { PlayIcon, PowerIcon, RotateCcwIcon, SearchIcon, SquareIcon } from "lucide-react";
 
@@ -739,7 +727,649 @@ git commit -m "feat: add adr control page"
 
 ---
 
-### Task 5: Add Measurement, Prism Config, and Rekap Components
+### Task 5: Add Peta Tambang Data And Page
+
+**Files:**
+- Create: `lib/asaba-mine-network.ts`
+- Create: `components/asaba/mine-network-map.tsx`
+- Create: `app/peta-jaringan-tambang/page.tsx`
+
+- [ ] **Step 1: Create mine network data**
+
+Create `lib/asaba-mine-network.ts`:
+
+```ts
+export type MineNetworkSensorType =
+  | "tiltmeter"
+  | "crack-meter"
+  | "piezometer"
+  | "rain-gauge"
+  | "vibration"
+  | "adr";
+
+export type MineNetworkSensorStatus = "normal" | "caution" | "danger";
+
+export type MineNetworkSensor = {
+  id: string;
+  name: string;
+  type: MineNetworkSensorType;
+  status: MineNetworkSensorStatus;
+  zone: string;
+  criticalPoint: string;
+  x: number;
+  y: number;
+  value: number;
+  unit: string;
+  threshold: string;
+  trend: "naik" | "stabil" | "turun";
+  lastUpdate: string;
+  battery: number;
+  signal: number;
+  note: string;
+};
+
+export const mineNetworkTypeLabels: Record<MineNetworkSensorType, string> = {
+  tiltmeter: "Tiltmeter",
+  "crack-meter": "Crack Meter",
+  piezometer: "Piezometer",
+  "rain-gauge": "Rain Gauge",
+  vibration: "Vibration",
+  adr: "ADR",
+};
+
+export const mineNetworkSensors: MineNetworkSensor[] = [
+  {
+    id: "TLT-HW-01",
+    name: "Tiltmeter North Highwall",
+    type: "tiltmeter",
+    status: "caution",
+    zone: "North Highwall",
+    criticalPoint: "Bench 740",
+    x: 26,
+    y: 24,
+    value: 3.8,
+    unit: "deg",
+    threshold: "3.0-5.0 deg",
+    trend: "naik",
+    lastUpdate: "10:42",
+    battery: 88,
+    signal: 92,
+    note: "Kemiringan meningkat setelah hujan shift pagi.",
+  },
+  {
+    id: "ADR-HW-01",
+    name: "ADR North Highwall 01",
+    type: "adr",
+    status: "danger",
+    zone: "North Highwall",
+    criticalPoint: "Highwall Crest",
+    x: 70,
+    y: 30,
+    value: 57.9,
+    unit: "mm",
+    threshold: "> 50 mm",
+    trend: "naik",
+    lastUpdate: "10:45",
+    battery: 76,
+    signal: 82,
+    note: "Target ADR masuk prioritas inspeksi geoteknik.",
+  },
+  {
+    id: "PZ-DP-01",
+    name: "Piezometer South Dump",
+    type: "piezometer",
+    status: "caution",
+    zone: "South Dump",
+    criticalPoint: "Dump Toe",
+    x: 22,
+    y: 72,
+    value: 31.4,
+    unit: "kPa",
+    threshold: "25-38 kPa",
+    trend: "naik",
+    lastUpdate: "10:40",
+    battery: 72,
+    signal: 75,
+    note: "Tekanan air pori naik, korelasikan dengan drainase disposal.",
+  },
+  {
+    id: "CRK-PA-01",
+    name: "Crack Meter Pit A",
+    type: "crack-meter",
+    status: "normal",
+    zone: "Pit A",
+    criticalPoint: "Crest A",
+    x: 48,
+    y: 42,
+    value: 6.1,
+    unit: "mm",
+    threshold: "< 10 mm",
+    trend: "stabil",
+    lastUpdate: "10:44",
+    battery: 93,
+    signal: 94,
+    note: "Retakan minor dan stabil.",
+  },
+  {
+    id: "ARR-HW-01",
+    name: "Rain Gauge Ridge",
+    type: "rain-gauge",
+    status: "normal",
+    zone: "North Highwall",
+    criticalPoint: "Weather Ridge",
+    x: 60,
+    y: 15,
+    value: 3.2,
+    unit: "mm/h",
+    threshold: "< 10 mm/h",
+    trend: "turun",
+    lastUpdate: "10:45",
+    battery: 95,
+    signal: 91,
+    note: "Hujan ringan, belum memicu alarm hidrologi.",
+  },
+  {
+    id: "VIB-CR-01",
+    name: "Vibration Crusher Line",
+    type: "vibration",
+    status: "normal",
+    zone: "Crusher",
+    criticalPoint: "Conveyor Transfer",
+    x: 84,
+    y: 40,
+    value: 2.2,
+    unit: "mm/s",
+    threshold: "< 3.0 mm/s",
+    trend: "stabil",
+    lastUpdate: "10:34",
+    battery: 81,
+    signal: 87,
+    note: "Getaran alat masih di bawah ambang.",
+  },
+  {
+    id: "ADR-DP-01",
+    name: "ADR South Dump 01",
+    type: "adr",
+    status: "caution",
+    zone: "South Dump",
+    criticalPoint: "Dump Crest",
+    x: 38,
+    y: 66,
+    value: 28.8,
+    unit: "mm",
+    threshold: "20-50 mm",
+    trend: "naik",
+    lastUpdate: "10:43",
+    battery: 84,
+    signal: 79,
+    note: "Displacement disposal meningkat perlahan.",
+  },
+  {
+    id: "PZ-TD-01",
+    name: "Piezometer Tailing Dam",
+    type: "piezometer",
+    status: "normal",
+    zone: "Tailing Dam",
+    criticalPoint: "Dam Toe",
+    x: 76,
+    y: 68,
+    value: 18.2,
+    unit: "kPa",
+    threshold: "< 25 kPa",
+    trend: "stabil",
+    lastUpdate: "10:36",
+    battery: 86,
+    signal: 78,
+    note: "Tekanan air pori masih dalam rentang normal.",
+  },
+];
+
+export const mineNetworkLines: Array<[string, string]> = [
+  ["ARR-HW-01", "TLT-HW-01"],
+  ["TLT-HW-01", "ADR-HW-01"],
+  ["ADR-HW-01", "CRK-PA-01"],
+  ["CRK-PA-01", "ADR-DP-01"],
+  ["ADR-DP-01", "PZ-DP-01"],
+  ["ADR-DP-01", "PZ-TD-01"],
+  ["ADR-HW-01", "VIB-CR-01"],
+];
+
+export function getMineNetworkStatusSummary(sensors: MineNetworkSensor[]) {
+  return sensors.reduce(
+    (summary, sensor) => {
+      summary.total += 1;
+      summary[sensor.status] += 1;
+      return summary;
+    },
+    { total: 0, normal: 0, caution: 0, danger: 0 },
+  );
+}
+
+export function getMineNetworkTypeSummary(sensors: MineNetworkSensor[]) {
+  return sensors.reduce(
+    (summary, sensor) => {
+      summary[sensor.type] += 1;
+      return summary;
+    },
+    {
+      tiltmeter: 0,
+      "crack-meter": 0,
+      piezometer: 0,
+      "rain-gauge": 0,
+      vibration: 0,
+      adr: 0,
+    } satisfies Record<MineNetworkSensorType, number>,
+  );
+}
+
+export function formatMineNetworkValue(sensor: MineNetworkSensor) {
+  return `${sensor.value.toLocaleString("id-ID", {
+    maximumFractionDigits: 1,
+    minimumFractionDigits: Number.isInteger(sensor.value) ? 0 : 1,
+  })} ${sensor.unit}`;
+}
+```
+
+- [ ] **Step 2: Create mine network map component**
+
+Create `components/asaba/mine-network-map.tsx`:
+
+```tsx
+"use client";
+
+import { useMemo, useState } from "react";
+import {
+  ActivityIcon,
+  BatteryIcon,
+  CloudRainIcon,
+  CrosshairIcon,
+  GaugeIcon,
+  Layers3Icon,
+  MapPinIcon,
+  RulerIcon,
+  SearchIcon,
+  SignalIcon,
+  SlidersHorizontalIcon,
+  TriangleAlertIcon,
+  WavesIcon,
+  XIcon,
+} from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  formatMineNetworkValue,
+  getMineNetworkStatusSummary,
+  getMineNetworkTypeSummary,
+  mineNetworkLines,
+  mineNetworkSensors,
+  mineNetworkTypeLabels,
+  type MineNetworkSensor,
+  type MineNetworkSensorStatus,
+  type MineNetworkSensorType,
+} from "@/lib/asaba-mine-network";
+import { cn } from "@/lib/utils";
+
+const sensorTypes: MineNetworkSensorType[] = [
+  "tiltmeter",
+  "crack-meter",
+  "piezometer",
+  "rain-gauge",
+  "vibration",
+  "adr",
+];
+
+const sensorTypeIcons = {
+  tiltmeter: GaugeIcon,
+  "crack-meter": RulerIcon,
+  piezometer: WavesIcon,
+  "rain-gauge": CloudRainIcon,
+  vibration: ActivityIcon,
+  adr: CrosshairIcon,
+} satisfies Record<MineNetworkSensorType, ElementType>;
+
+const sensorTypeColors = {
+  tiltmeter: "#2f6fed",
+  "crack-meter": "#c05621",
+  piezometer: "#0891b2",
+  "rain-gauge": "#2563eb",
+  vibration: "#7c3aed",
+  adr: "#15803d",
+} satisfies Record<MineNetworkSensorType, string>;
+
+const statusStyles = {
+  normal: { label: "Normal", dot: "bg-emerald-500", text: "text-emerald-700", border: "border-emerald-200", bg: "bg-emerald-50", ring: "ring-emerald-400" },
+  caution: { label: "Waspada", dot: "bg-amber-500", text: "text-amber-700", border: "border-amber-200", bg: "bg-amber-50", ring: "ring-amber-400" },
+  danger: { label: "Awas", dot: "bg-red-500", text: "text-red-700", border: "border-red-200", bg: "bg-red-50", ring: "ring-red-500" },
+} satisfies Record<MineNetworkSensorStatus, { label: string; dot: string; text: string; border: string; bg: string; ring: string }>;
+
+function getSensorById(id: string) {
+  return mineNetworkSensors.find((sensor) => sensor.id === id);
+}
+
+function StatusPill({ status }: { status: MineNetworkSensorStatus }) {
+  const style = statusStyles[status];
+
+  return (
+    <span className={cn("inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-semibold", style.bg, style.border, style.text)}>
+      <span className={cn("h-2 w-2 rounded-full", style.dot)} />
+      {style.label}
+    </span>
+  );
+}
+
+function SensorMarker({
+  sensor,
+  selected,
+  onSelect,
+}: {
+  sensor: MineNetworkSensor;
+  selected: boolean;
+  onSelect: (sensor: MineNetworkSensor) => void;
+}) {
+  const Icon = sensorTypeIcons[sensor.type];
+  const color = sensorTypeColors[sensor.type];
+  const status = statusStyles[sensor.status];
+
+  return (
+    <button
+      className={cn(
+        "absolute z-20 flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 bg-white shadow-md transition hover:scale-110 focus-visible:outline-none focus-visible:ring-4",
+        selected && "scale-110 ring-4",
+        status.ring,
+      )}
+      onClick={() => onSelect(sensor)}
+      style={{ left: `${sensor.x}%`, top: `${sensor.y}%`, borderColor: color }}
+      title={`${sensor.id} - ${sensor.name}`}
+      type="button"
+    >
+      <span className={cn("absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-white", status.dot)} />
+      <Icon className="h-4 w-4" style={{ color }} />
+    </button>
+  );
+}
+
+export function MineNetworkMap() {
+  const [selectedType, setSelectedType] = useState<MineNetworkSensorType | "all">("all");
+  const [selectedId, setSelectedId] = useState<string | null>(mineNetworkSensors[0]?.id ?? null);
+  const [query, setQuery] = useState("");
+  const [filterOpen, setFilterOpen] = useState(true);
+  const [legendOpen, setLegendOpen] = useState(false);
+  const statusSummary = getMineNetworkStatusSummary(mineNetworkSensors);
+  const typeSummary = getMineNetworkTypeSummary(mineNetworkSensors);
+
+  const filteredSensors = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    return mineNetworkSensors.filter((sensor) => {
+      const matchesType = selectedType === "all" || sensor.type === selectedType;
+      const matchesQuery =
+        !normalizedQuery ||
+        sensor.name.toLowerCase().includes(normalizedQuery) ||
+        sensor.id.toLowerCase().includes(normalizedQuery) ||
+        sensor.zone.toLowerCase().includes(normalizedQuery);
+      return matchesType && matchesQuery;
+    });
+  }, [query, selectedType]);
+
+  const selectedSensor = selectedId
+    ? mineNetworkSensors.find((sensor) => sensor.id === selectedId) ?? null
+    : null;
+
+  const prioritySensors = mineNetworkSensors
+    .filter((sensor) => sensor.status !== "normal")
+    .sort((a, b) => (a.status === "danger" ? -1 : 1) - (b.status === "danger" ? -1 : 1));
+
+  return (
+    <section className="relative min-h-[calc(100vh-7rem)] overflow-hidden rounded-lg border bg-[#e8eef0]">
+      <div className="absolute inset-0">
+        <svg className="h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+          <defs>
+            <pattern id="asaba-mine-grid" width="8" height="8" patternUnits="userSpaceOnUse">
+              <path d="M 8 0 L 0 0 0 8" fill="none" stroke="#cbd5e1" strokeWidth="0.18" opacity="0.5" />
+            </pattern>
+            <linearGradient id="asaba-pit-outer" x1="20" y1="20" x2="86" y2="72" gradientUnits="userSpaceOnUse">
+              <stop stopColor="#f6fafc" />
+              <stop offset="0.5" stopColor="#d2dde6" />
+              <stop offset="1" stopColor="#93a6b8" />
+            </linearGradient>
+            <linearGradient id="asaba-pit-floor" x1="40" y1="43" x2="65" y2="57" gradientUnits="userSpaceOnUse">
+              <stop stopColor="#8fa3b6" />
+              <stop offset="1" stopColor="#41576c" />
+            </linearGradient>
+          </defs>
+          <rect width="100" height="100" fill="#e8eef0" />
+          <rect width="100" height="100" fill="url(#asaba-mine-grid)" />
+          <path d="M0 66 L11 55 L24 51 L36 63 L34 78 L18 91 L0 100 Z" fill="#c6d7cb" />
+          <path d="M73 0 L100 0 L100 44 L92 47 L84 41 L78 24 Z" fill="#d9e8dc" />
+          <path d="M16 27 L30 18 L55 13 L76 18 L88 29 L93 43 L88 57 L75 68 L54 75 L32 70 L17 58 L10 43 Z" fill="#d7e0e6" stroke="#b5c3cd" strokeWidth="0.65" />
+          <path d="M19 30 L33 22 L55 17 L74 21 L86 31 L90 43 L84 56 L72 65 L53 70 L34 66 L21 56 L14 43 Z" fill="url(#asaba-pit-outer)" stroke="#9fb1c0" strokeWidth="0.95" />
+          <path d="M24 38 L39 30 L58 27 L73 32 L81 42 L78 53 L66 61 L49 64 L34 58 L25 49 Z" fill="#bdcbd7" stroke="#91a5b7" strokeWidth="0.78" />
+          <path d="M33 44 L45 38 L60 36 L70 41 L73 49 L65 56 L50 59 L39 55 L32 49 Z" fill="#a9bac8" stroke="#7f94a8" strokeWidth="0.72" />
+          <path d="M41 47 L51 43 L61 44 L66 49 L61 54 L50 56 L42 53 Z" fill="url(#asaba-pit-floor)" stroke="#5d7389" strokeWidth="0.68" />
+          <path d="M4 88 C18 79 30 73 43 64 C56 56 68 46 83 34 C89 29 94 23 98 18" fill="none" stroke="#9aa9b9" strokeWidth="2.05" strokeLinecap="round" />
+          <path d="M5 86 C19 78 32 71 44 62 C57 54 69 44 84 33 C90 28 94 22 99 17" fill="none" stroke="#ffffff" strokeWidth="0.7" strokeLinecap="round" strokeDasharray="2.3 2.3" />
+        </svg>
+      </div>
+
+      <div className="pointer-events-none absolute left-4 right-4 top-4 z-30 flex flex-wrap items-start justify-between gap-3">
+        <div className="pointer-events-auto rounded-lg border bg-white/95 px-3 py-2 shadow-sm backdrop-blur">
+          <div className="flex items-center gap-2 text-xs font-bold text-[#303481]">
+            <MapPinIcon className="h-4 w-4" />
+            Peta Tambang ASABA
+          </div>
+          <p className="mt-1 text-[11px] text-muted-foreground">{statusSummary.total} titik sensor dummy</p>
+        </div>
+        <div className="pointer-events-auto flex gap-2">
+          <Button variant={filterOpen ? "default" : "outline"} size="sm" onClick={() => setFilterOpen((open) => !open)}>
+            <SlidersHorizontalIcon className="h-4 w-4" />
+            Filter
+          </Button>
+          <Button variant={legendOpen ? "default" : "outline"} size="sm" onClick={() => setLegendOpen((open) => !open)}>
+            <Layers3Icon className="h-4 w-4" />
+            Legenda
+          </Button>
+        </div>
+      </div>
+
+      {legendOpen ? (
+        <div className="absolute left-4 top-20 z-40 w-[280px] rounded-lg border bg-white/95 p-4 shadow-sm backdrop-blur">
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-sm font-bold">Legenda</h3>
+            <button className="rounded-md p-1 text-muted-foreground hover:bg-muted" onClick={() => setLegendOpen(false)} type="button">
+              <XIcon className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="mb-3 flex flex-wrap gap-2">
+            {(["normal", "caution", "danger"] as MineNetworkSensorStatus[]).map((status) => (
+              <StatusPill key={status} status={status} />
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {sensorTypes.map((type) => {
+              const Icon = sensorTypeIcons[type];
+              return (
+                <Badge key={type} variant="outline" className="gap-1.5">
+                  <Icon className="h-3.5 w-3.5" style={{ color: sensorTypeColors[type] }} />
+                  {mineNetworkTypeLabels[type]}
+                </Badge>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
+
+      <svg className="pointer-events-none absolute inset-0 z-10 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+        {mineNetworkLines.map(([fromId, toId]) => {
+          const from = getSensorById(fromId);
+          const to = getSensorById(toId);
+          if (!from || !to) return null;
+          return (
+            <line
+              key={`${fromId}-${toId}`}
+              x1={from.x}
+              x2={to.x}
+              y1={from.y}
+              y2={to.y}
+              stroke="#475569"
+              strokeDasharray="1.5 1.2"
+              strokeOpacity="0.34"
+              strokeWidth="0.45"
+            />
+          );
+        })}
+      </svg>
+
+      {filteredSensors.map((sensor) => (
+        <SensorMarker
+          key={sensor.id}
+          onSelect={(nextSensor) => setSelectedId(nextSensor.id)}
+          selected={sensor.id === selectedSensor?.id}
+          sensor={sensor}
+        />
+      ))}
+
+      {filterOpen ? (
+        <div className="absolute left-4 top-24 z-30 max-h-[calc(100%-7rem)] w-[286px] space-y-3 overflow-auto pr-1">
+          <section className="rounded-lg border bg-white/95 p-4 shadow-sm backdrop-blur">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-sm font-bold">Filter Sensor</h3>
+              <button className="rounded-md p-1 text-muted-foreground hover:bg-muted" onClick={() => setFilterOpen(false)} type="button">
+                <XIcon className="h-4 w-4" />
+              </button>
+            </div>
+            <label className="mt-3 flex h-9 items-center gap-2 rounded-md border bg-background/80 px-3 text-sm">
+              <SearchIcon className="h-4 w-4 text-muted-foreground" />
+              <input
+                className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-muted-foreground"
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Cari ID, zona, sensor"
+                value={query}
+              />
+            </label>
+            <div className="mt-3 grid gap-2">
+              <Button className="justify-start" onClick={() => setSelectedType("all")} variant={selectedType === "all" ? "default" : "outline"}>
+                Semua Sensor
+                <span className="ml-auto text-xs">{statusSummary.total}</span>
+              </Button>
+              {sensorTypes.map((type) => {
+                const Icon = sensorTypeIcons[type];
+                return (
+                  <Button className="justify-start" key={type} onClick={() => setSelectedType(type)} variant={selectedType === type ? "default" : "outline"}>
+                    <Icon className="h-4 w-4" />
+                    {mineNetworkTypeLabels[type]}
+                    <span className="ml-auto text-xs">{typeSummary[type]}</span>
+                  </Button>
+                );
+              })}
+            </div>
+          </section>
+          <section className="rounded-lg border bg-white/95 p-3 shadow-sm backdrop-blur">
+            <h3 className="text-sm font-bold">Prioritas Inspeksi</h3>
+            <div className="mt-2 space-y-2">
+              {prioritySensors.map((sensor) => (
+                <button className="w-full rounded-md border bg-white/80 p-2 text-left transition hover:bg-muted/70" key={sensor.id} onClick={() => setSelectedId(sensor.id)} type="button">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-xs font-bold">{sensor.id}</p>
+                      <p className="mt-0.5 text-[11px] text-muted-foreground">{sensor.criticalPoint}</p>
+                    </div>
+                    <StatusPill status={sensor.status} />
+                  </div>
+                </button>
+              ))}
+            </div>
+          </section>
+        </div>
+      ) : null}
+
+      {selectedSensor ? (
+        <aside className="absolute right-4 top-24 z-30 max-h-[calc(100%-7rem)] w-[310px] overflow-auto rounded-lg border bg-white/94 p-3.5 shadow-sm backdrop-blur">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{selectedSensor.id}</p>
+              <h3 className="mt-0.5 text-base font-bold leading-tight">{selectedSensor.name}</h3>
+            </div>
+            <StatusPill status={selectedSensor.status} />
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <div className="rounded-md border bg-muted/25 p-2.5">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Nilai</p>
+              <p className="mt-1 text-base font-bold">{formatMineNetworkValue(selectedSensor)}</p>
+            </div>
+            <div className="rounded-md border bg-muted/25 p-2.5">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Trend</p>
+              <p className="mt-1 text-base font-bold capitalize">{selectedSensor.trend}</p>
+            </div>
+          </div>
+          <dl className="mt-3 grid gap-2 text-xs">
+            <div className="flex justify-between gap-3 border-b pb-2"><dt className="text-muted-foreground">Tipe</dt><dd className="font-semibold">{mineNetworkTypeLabels[selectedSensor.type]}</dd></div>
+            <div className="flex justify-between gap-3 border-b pb-2"><dt className="text-muted-foreground">Zona</dt><dd className="font-semibold">{selectedSensor.zone}</dd></div>
+            <div className="flex justify-between gap-3 border-b pb-2"><dt className="text-muted-foreground">Titik kritis</dt><dd className="text-right font-semibold">{selectedSensor.criticalPoint}</dd></div>
+            <div className="flex justify-between gap-3 border-b pb-2"><dt className="text-muted-foreground">Ambang</dt><dd className="font-semibold">{selectedSensor.threshold}</dd></div>
+            <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Update</dt><dd className="font-semibold">{selectedSensor.lastUpdate}</dd></div>
+          </dl>
+          <p className="mt-3 rounded-md border bg-muted/25 p-2.5 text-xs leading-relaxed text-muted-foreground">{selectedSensor.note}</p>
+          <div className="mt-3 grid gap-2 text-xs">
+            <div className="flex items-center justify-between"><span className="flex items-center gap-1.5 text-muted-foreground"><BatteryIcon className="h-3.5 w-3.5" /> Battery</span><strong>{selectedSensor.battery}%</strong></div>
+            <div className="flex items-center justify-between"><span className="flex items-center gap-1.5 text-muted-foreground"><SignalIcon className="h-3.5 w-3.5" /> Signal</span><strong>{selectedSensor.signal}%</strong></div>
+          </div>
+        </aside>
+      ) : null}
+    </section>
+  );
+}
+```
+
+- [ ] **Step 3: Create Peta Tambang page**
+
+Create `app/peta-jaringan-tambang/page.tsx`:
+
+```tsx
+import { MineNetworkMap } from "@/components/asaba/mine-network-map";
+import { AppShell } from "@/components/dashboard/app-shell";
+
+export const dynamic = "force-dynamic";
+
+export default function PetaJaringanTambangPage() {
+  return (
+    <AppShell activePath="/peta-jaringan-tambang" contentPadding={false} title="Peta Tambang">
+      <MineNetworkMap />
+    </AppShell>
+  );
+}
+```
+
+- [ ] **Step 4: Verify Peta Tambang**
+
+Run:
+
+```bash
+npm run typecheck
+npm run lint
+```
+
+Expected: typecheck PASS. Lint PASS or only existing warnings.
+
+If dev server is running:
+
+```powershell
+Invoke-WebRequest -Uri http://localhost:3000/peta-jaringan-tambang -UseBasicParsing
+```
+
+Expected: HTTP 200 and page contains `Peta Tambang`.
+
+- [ ] **Step 5: Commit Peta Tambang**
+
+Run:
+
+```bash
+git add lib/asaba-mine-network.ts components/asaba/mine-network-map.tsx app/peta-jaringan-tambang/page.tsx
+git commit -m "feat: add asaba mine network map"
+```
+
+---
+
+### Task 6: Add Measurement, Prism Config, and Rekap Components
 
 **Files:**
 - Create: `components/asaba/measurement-results-table.tsx`
@@ -988,7 +1618,7 @@ git commit -m "feat: add asaba data tables"
 
 ---
 
-### Task 6: Add ASABA Data Pages
+### Task 7: Add ASABA Data Pages
 
 **Files:**
 - Create: `app/hasil-pengukuran/page.tsx`
@@ -1086,7 +1716,7 @@ git commit -m "feat: add asaba data pages"
 
 ---
 
-### Task 7: Add Lightweight 3D Visualization
+### Task 8: Add Lightweight 3D Visualization
 
 **Files:**
 - Create: `components/asaba/asaba-visualization.tsx`
@@ -1263,7 +1893,7 @@ git commit -m "feat: add asaba visualization page"
 
 ---
 
-### Task 8: Documentation and Full Verification
+### Task 9: Documentation and Full Verification
 
 **Files:**
 - Modify: `README.md`
@@ -1274,7 +1904,7 @@ git commit -m "feat: add asaba visualization page"
 In `README.md`, add these bullets under the implemented status list:
 
 ```md
-- Modul dummy ASABA/ADR: ADR Control, Hasil Pengukuran, Visualisasi 3D, Prism Config, dan Rekap Data.
+- Modul dummy ASABA/ADR: ADR Control, Hasil Pengukuran, Peta Tambang, Visualisasi 3D, Prism Config, dan Rekap Data.
 - Simulasi dummy RTS/prism target tanpa command MQTT asli.
 ```
 
@@ -1295,6 +1925,7 @@ Phase 2 Approach A menambahkan halaman dummy ADR/RTS:
 
 - ADR Control
 - Hasil Pengukuran
+- Peta Tambang
 - Visualisasi 3D
 - Prism Config
 - Rekap Data
@@ -1328,6 +1959,7 @@ If dev server is running, run:
 $routes = @(
   "http://localhost:3000/adr-control",
   "http://localhost:3000/hasil-pengukuran",
+  "http://localhost:3000/peta-jaringan-tambang",
   "http://localhost:3000/visualisasi-3d",
   "http://localhost:3000/prism-config",
   "http://localhost:3000/rekap-data",
@@ -1358,9 +1990,10 @@ git commit -m "docs: document asaba dummy modules"
 - Existing Mining Monitoring pages still render.
 - `/gnss` appears as Deformasi Lereng.
 - `/awlr` appears as Air & Cuaca.
-- Sidebar includes ADR / RTS module entries.
+- Sidebar includes ADR / RTS module entries, including Peta Tambang.
 - `/adr-control` renders dummy control/status/progress panels.
 - `/hasil-pengukuran` renders ADR measurement results.
+- `/peta-jaringan-tambang` renders a nonblank interactive dummy mine network map.
 - `/visualisasi-3d` renders a nonblank lightweight dummy slope/prism visualization.
 - `/prism-config` renders prism target config.
 - `/rekap-data` renders ADR summary and rekap table.

@@ -16,12 +16,13 @@ In scope:
 - Add new pages using the existing app shell:
   - ADR Control
   - Hasil Pengukuran
+  - Peta Tambang
   - Visualisasi 3D
   - Prism Config
   - Rekap Data
 - Use dummy ADR/RTS/prism data that matches the mining site context.
 - Keep visible styling aligned with the existing `gnss-mining-monitoring` components: cards, badges, tables, compact controls, and dashboard sections.
-- Reuse ASABA concepts from `d:\BE Software\BE PROJECT\adr_baru\asaba-nextjs`, especially prism targets, RTS status, measurement results, scheduling, and deformation visual language.
+- Reuse ASABA concepts from `d:\BE Software\BE PROJECT\adr_baru\asaba-nextjs`, especially prism targets, RTS status, measurement results, mine network map, scheduling, and deformation visual language.
 - Keep labels mining-facing and operational: ADR, RTS, prism target, highwall, disposal, deformation, inspection, and measurement.
 
 Out of scope:
@@ -62,6 +63,7 @@ Recommended structure:
 - **ADR / RTS**
   - ADR Control: `/adr-control`
   - Hasil Pengukuran: `/hasil-pengukuran`
+  - Peta Tambang: `/peta-jaringan-tambang`
   - Visualisasi 3D: `/visualisasi-3d`
   - Prism Config: `/prism-config`
   - Rekap Data: `/rekap-data`
@@ -130,6 +132,20 @@ The dummy data should include:
   - failed measurements
   - max displacement
   - critical target
+- Mine network sensors for Peta Tambang:
+  - id
+  - name
+  - type
+  - status
+  - zone
+  - critical point
+  - x/y layout coordinates
+  - latest value
+  - threshold
+  - trend
+  - battery
+  - signal
+  - note
 
 Use mining dummy areas already present in the app:
 
@@ -197,6 +213,40 @@ Expected UI:
   - 2D displacement
   - 3D displacement
   - status
+
+### Peta Tambang
+
+Purpose: bring the ASABA mine network map experience into the Mining Monitoring System without adding MapLibre, Deck.gl, or database dependencies.
+
+Expected UI:
+
+- Full-width map surface inside the existing app shell.
+- Stylized open pit background adapted from `asaba-nextjs/src/components/mine-network-map.tsx`.
+- Sensor markers for tiltmeter, crack meter, piezometer, rain gauge, vibration, and GNSS/ADR.
+- Network lines between related sensors.
+- Filter panel:
+  - search by sensor id, zone, or name
+  - filter by sensor type
+  - priority list for warning/danger sensors
+- Legend panel:
+  - status legend
+  - sensor type legend
+- Detail panel for selected sensor:
+  - value
+  - type
+  - zone
+  - critical point
+  - threshold
+  - update time
+  - battery and signal
+
+Implementation constraints:
+
+- Adapt the ASABA map into `components/asaba/mine-network-map.tsx`.
+- Put map data and helpers into a local module such as `lib/asaba-mine-network.ts`.
+- Keep this as dummy UI data only.
+- Do not add real GIS base maps or heavy map libraries in this phase.
+- Do not add the ASABA 3D map route yet.
 
 ### Visualisasi 3D
 
@@ -274,6 +324,7 @@ Suggested components:
 - `adr-status-cards.tsx`
 - `adr-control-panel.tsx`
 - `prism-progress-grid.tsx`
+- `mine-network-map.tsx`
 - `measurement-results-table.tsx`
 - `prism-config-table.tsx`
 - `asaba-visualization.tsx`
@@ -285,10 +336,11 @@ Keep each component focused and reusable by passing dummy data as props.
 
 Recommended data flow:
 
-1. `lib/asaba-dummy.ts` exports typed arrays and helper summaries.
-2. Page server components import dummy data and pass it to client components when interactivity is needed.
-3. Client components manage only local UI state such as selected target, simulated running state, filter selection, and selected visualization node.
-4. No ASABA API routes are required for Approach A.
+1. `lib/asaba-dummy.ts` exports typed ADR/RTS/prism arrays and helper summaries.
+2. `lib/asaba-mine-network.ts` exports typed mine network sensors and helper summaries.
+3. Page server components import dummy data and pass it to client components when interactivity is needed.
+4. Client components manage only local UI state such as selected target, simulated running state, filter selection, selected map sensor, and selected visualization node.
+5. No ASABA API routes are required for Approach A.
 
 ## Error Handling
 
@@ -310,6 +362,7 @@ Minimum verification:
 - Manual smoke navigation:
   - `/adr-control`
   - `/hasil-pengukuran`
+  - `/peta-jaringan-tambang`
   - `/visualisasi-3d`
   - `/prism-config`
   - `/rekap-data`
@@ -321,4 +374,5 @@ Acceptance criteria:
 - No live MQTT/control command is sent.
 - No Prisma schema migration is required.
 - Sidebar contains the new ASABA/ADR module routes.
+- Peta Tambang renders a nonblank interactive dummy mine network map.
 - Dummy data clearly represents mining ADR/RTS/prism workflows.
