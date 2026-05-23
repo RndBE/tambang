@@ -1,7 +1,7 @@
-import { AppShell } from "@/components/dashboard/app-shell";
-import { MineNetworkMap } from "@/components/asaba/mine-network-map";
+import { MineSatelliteMap } from "@/components/asaba/mine-satellite-map"
+import { AppShell } from "@/components/dashboard/app-shell"
 
-export const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic"
 
 export default function PetaRisikoPage() {
   return (
@@ -10,7 +10,7 @@ export default function PetaRisikoPage() {
       contentPadding={false}
       title="Peta Monitoring Tambang"
     >
-      <MineNetworkMap />
+      <MineSatelliteMap />
     </AppShell>
-  );
+  )
 }
