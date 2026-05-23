@@ -40,8 +40,8 @@ type SidebarUser = {
 function getData(activePath = "/") {
   return {
     user: {
-      name: "Operator Pantura",
-      email: "operator@gnss.local",
+      name: "Operator Tambang",
+      email: "operator@mining.local",
       avatar: "",
     },
     navMain: [
@@ -64,20 +64,17 @@ function getData(activePath = "/") {
             isActive: activePath === "/",
           },
           {
-            title: "Peta Risiko",
+            title: "Peta Monitoring",
             url: "/peta-risiko",
             isActive: activePath === "/peta-risiko",
           },
           {
-            title: "Analisa Data",
+            title: "Sensor Geoteknik",
             url: "/analisa-data",
-            isActive:
-              activePath === "/analisa-data" ||
-              activePath === "/gnss" ||
-              activePath === "/awlr",
+            isActive: activePath === "/analisa-data",
           },
           {
-            title: "CCTV",
+            title: "CCTV Monitoring",
             url: "/cctv",
             isActive: activePath === "/cctv",
           },
@@ -90,9 +87,19 @@ function getData(activePath = "/") {
         isActive: isActive(activePath, ["/perangkat", "/gnss", "/awlr"]),
         items: [
           {
-            title: "Perangkat Logger",
+            title: "Perangkat Sensor",
             url: "/perangkat",
             isActive: activePath === "/perangkat",
+          },
+          {
+            title: "Deformasi Lereng",
+            url: "/gnss",
+            isActive: activePath === "/gnss",
+          },
+          {
+            title: "Air & Cuaca",
+            url: "/awlr",
+            isActive: activePath === "/awlr",
           },
         ],
       },
@@ -141,19 +148,19 @@ function getData(activePath = "/") {
         isActive: activePath === "/perangkat",
       },
       {
-        name: "Muka Air",
+        name: "Air & Cuaca",
         url: "/analisa-data?sensor=awlr",
         icon: <WavesIcon />,
         isActive: activePath === "/awlr",
       },
       {
-        name: "Peta Risiko",
+        name: "Peta Monitoring",
         url: "/peta-risiko",
         icon: <MapIcon />,
         isActive: activePath === "/peta-risiko",
       },
       {
-        name: "CCTV",
+        name: "CCTV Monitoring",
         url: "/cctv",
         icon: <CameraIcon />,
         isActive: activePath === "/cctv",
@@ -182,7 +189,7 @@ export function AppSidebar({
   const [user, setUser] = React.useState(data.user)
 
   React.useEffect(() => {
-    const storedUser = window.localStorage.getItem("gnss:user")
+    const storedUser = window.localStorage.getItem("mining:user")
 
     if (!storedUser) return
 
@@ -196,7 +203,7 @@ export function AppSidebar({
         avatar: parsed.avatar ?? current.avatar,
       }))
     } catch {
-      window.localStorage.removeItem("gnss:user")
+      window.localStorage.removeItem("mining:user")
     }
   }, [])
 

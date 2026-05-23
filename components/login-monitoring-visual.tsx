@@ -2,10 +2,11 @@ import {
   ActivityIcon,
   AlertTriangleIcon,
   CameraIcon,
+  CloudRainIcon,
   DatabaseIcon,
+  GaugeIcon,
   RadioTowerIcon,
   SatelliteIcon,
-  WavesIcon,
   WifiIcon,
 } from "lucide-react"
 
@@ -14,10 +15,11 @@ import type { UserRole } from "@/lib/types"
 
 export function LoginMonitoringVisual({ roles }: { roles: UserRole[] }) {
   const visibleRoles = roles.slice(0, 4)
-  const telemetry = [
-    { label: "GNSS", value: "3 pos", icon: RadioTowerIcon },
-    { label: "AWLR", value: "2 pos", icon: WavesIcon },
-    { label: "CCTV", value: "2 kamera", icon: CameraIcon },
+  const metrics = [
+    { label: "ARR", value: "2 pos", icon: CloudRainIcon },
+    { label: "ADR", value: "4 target", icon: RadioTowerIcon },
+    { label: "Piezometer", value: "3 pos", icon: GaugeIcon },
+    { label: "CCTV", value: "4 kamera", icon: CameraIcon },
   ]
 
   return (
@@ -26,7 +28,7 @@ export function LoginMonitoringVisual({ roles }: { roles: UserRole[] }) {
         <div className="relative h-[620px] w-full max-w-[800px]">
           <div className="login-command-card absolute inset-x-8 top-6 h-[430px] overflow-hidden rounded-xl border bg-background shadow-sm">
             <div className="absolute left-5 top-5 z-10 flex items-center gap-2">
-              <Badge variant="secondary">Live coastal telemetry</Badge>
+              <Badge variant="secondary">Demo Mining Site</Badge>
               <Badge variant="outline">Pantura</Badge>
             </div>
             <div className="absolute right-5 top-5 z-10 rounded-md border bg-background/80 px-3 py-2 text-xs text-muted-foreground backdrop-blur">
@@ -103,12 +105,12 @@ export function LoginMonitoringVisual({ roles }: { roles: UserRole[] }) {
 
             <MonitoringMarker
               className="left-[28%] top-[47%]"
-              label="GNSS DMK-03"
+              label="ADR-HW-01"
               tone="emerald"
             />
             <MonitoringMarker
               className="left-[55%] top-[42%]"
-              label="AWLR PKL-01"
+              label="PZ-SD-01"
               tone="sky"
             />
             <MonitoringMarker
@@ -130,7 +132,7 @@ export function LoginMonitoringVisual({ roles }: { roles: UserRole[] }) {
               Sensor stack
             </div>
             <div className="mt-4 grid gap-2">
-              {telemetry.map(({ label, value, icon: Icon }) => (
+              {metrics.map(({ label, value, icon: Icon }) => (
                 <div
                   className="login-float-row flex items-center justify-between rounded-md border bg-card px-3 py-2 text-sm"
                   key={label}
@@ -150,7 +152,7 @@ export function LoginMonitoringVisual({ roles }: { roles: UserRole[] }) {
               <div>
                 <p className="text-sm font-medium">Risk engine</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Skor pesisir diperbarui dari telemetry lapangan.
+                  Skor lereng diperbarui dari telemetry sensor tambang.
                 </p>
               </div>
               <ActivityIcon className="size-5 text-muted-foreground" />

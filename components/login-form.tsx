@@ -55,7 +55,7 @@ export function LoginForm({
       return
     }
 
-    window.localStorage.setItem("gnss:user", JSON.stringify(payload.user))
+    window.localStorage.setItem("mining:user", JSON.stringify(payload.user))
     setMessage(`Masuk sebagai ${payload.user.name} (${payload.user.role}).`)
     router.push("/")
     router.refresh()
@@ -81,7 +81,7 @@ export function LoginForm({
             id="email"
             name="email"
             onChange={(event) => setEmail(event.target.value)}
-            placeholder="operator@gnss.local"
+            placeholder="operator@mining.local"
             required
             type="email"
             value={email}
@@ -99,7 +99,7 @@ export function LoginForm({
             value={password}
           />
           <FieldDescription>
-            Akun seed: operator@gnss.local / operator123
+            Akun seed: operator@mining.local / operator123
           </FieldDescription>
         </Field>
         <Field>

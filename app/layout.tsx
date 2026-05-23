@@ -11,9 +11,9 @@ const geist = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "Dashboard Pemantauan Penurunan Pesisir",
+  title: "Mining Monitoring System",
   description:
-    "Sistem monitoring GNSS, AWLR, CCTV, telemetry, alarm rob, dan status perangkat pesisir.",
+    "Sistem monitoring tambang untuk sensor geoteknik, kestabilan lereng, deformasi, air, cuaca, CCTV, debu, kebisingan, dan gas.",
   icons: {
     icon: [{ url: "/favicon.png", type: "image/png" }],
     shortcut: ["/favicon.png"],

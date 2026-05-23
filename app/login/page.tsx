@@ -26,7 +26,7 @@ export default async function LoginPage() {
               orientation="vertical"
               className="h-5 data-vertical:self-auto"
             />
-            <span>Coastal Monitor</span>
+            <span>Mining Monitoring System</span>
           </div>
         </div>
 
