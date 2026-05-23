@@ -1,6 +1,6 @@
 export type RiskStatus = "Normal" | "Waspada" | "Siaga" | "Awas";
 
-export type PointType = "GNSS" | "AWLR" | "CCTV";
+export type PointType = "GNSS" | "AWLR" | "CCTV" | "WEATHER";
 
 export type DeviceStatus = "Online" | "Weak" | "Offline" | "Maintenance";
 
@@ -90,7 +90,7 @@ export type DeviceManagementItem = {
   id: string;
   code: string;
   name: string;
-  type: PointType | "LOGGER" | "WEATHER";
+  type: PointType | "LOGGER";
   status: DeviceStatus;
   battery: number;
   signal: number;
@@ -103,7 +103,7 @@ export type DeviceManagementItem = {
   lastDataLabel: string;
   pointId: string;
   pointName: string;
-  pointType: PointType | "WEATHER";
+  pointType: PointType;
   area: string;
 };
 
@@ -111,7 +111,7 @@ export type DevicePointOption = {
   id: string;
   code: string;
   name: string;
-  type: PointType | "WEATHER";
+  type: PointType;
   area: string;
 };
 

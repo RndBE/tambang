@@ -67,11 +67,12 @@ const riskScoreByStatus = {
 } as const;
 
 const nextWindowByArea: Record<string, string> = {
-  "Batang Roban": "19.30-21.30",
-  "Kendal Kaliwungu": "20.30-22.30",
-  "Pekalongan Utara": "21.00-23.00",
-  "Semarang Utara": "20.00-22.00",
-  Sayung: "22.00-00.00",
+  "Pit A": "Shift 1",
+  "Pit B": "Shift 2",
+  "North Highwall": "Segera",
+  "South Dump": "Shift 1",
+  "Settling Pond": "Shift 2",
+  "Tailing Dam": "Shift 1",
 };
 
 const gnssRangeDays: Record<GnssRange, number | null> = {
@@ -83,11 +84,9 @@ const gnssRangeDays: Record<GnssRange, number | null> = {
 };
 
 const gnssAxisFactors: Record<string, { x: number; y: number; satellites: number; pdop: number }> = {
-  "gnss-btg-01": { x: -0.15, y: 0.08, satellites: 20, pdop: 1.28 },
-  "gnss-kdl-01": { x: 0.11, y: -0.09, satellites: 18, pdop: 1.49 },
-  "gnss-pkl-01": { x: -0.18, y: 0.11, satellites: 21, pdop: 1.18 },
-  "gnss-smg-02": { x: 0.14, y: -0.16, satellites: 19, pdop: 1.34 },
-  "gnss-dmk-03": { x: 0.09, y: 0.13, satellites: 16, pdop: 1.72 },
+  "adr-hw-01": { x: -0.18, y: 0.11, satellites: 21, pdop: 1.18 },
+  "adr-dump-01": { x: 0.14, y: -0.16, satellites: 19, pdop: 1.34 },
+  "adr-pit-a-01": { x: 0.09, y: 0.13, satellites: 16, pdop: 1.72 },
 };
 
 const gnssParameterLabels: Record<GnssParameter, { label: string; unit: string }> = {
@@ -135,13 +134,13 @@ function buildTrendData(readings: Awaited<ReturnType<typeof getRawGnssReadings>>
         gnssDmk03: 0,
       } satisfies TrendDatum);
 
-    if (reading.point.code === "gnss-pkl-01") {
+    if (reading.point.code === "adr-hw-01") {
       row.gnssPkl01 = reading.velocityCmYear;
     }
-    if (reading.point.code === "gnss-smg-02") {
+    if (reading.point.code === "adr-dump-01") {
       row.gnssSmg02 = reading.velocityCmYear;
     }
-    if (reading.point.code === "gnss-dmk-03") {
+    if (reading.point.code === "adr-pit-a-01") {
       row.gnssDmk03 = reading.velocityCmYear;
     }
 
@@ -247,6 +246,8 @@ export async function getDeviceTelemetry(): Promise<DeviceTelemetry[]> {
           ? "AWLR"
           : device.type === "CCTV"
             ? "CCTV"
+            : device.type === "WEATHER"
+              ? "WEATHER"
             : "GNSS",
     status: toDeviceStatus(device.status),
     battery: device.battery,
@@ -541,7 +542,7 @@ export async function getRiskAreas(): Promise<RiskArea[]> {
       score: riskScoreByStatus[status],
       subsidenceRate: formatSignedCm(gnss?.velocityCmYear),
       waterLevel: formatMeters(water?.waterLevelM),
-      nextWindow: nextWindowByArea[area.name] ?? "Belum dihitung",
+      nextWindow: nextWindowByArea[area.name] ?? "Inspeksi shift berikutnya",
     };
   });
 }
@@ -613,17 +614,17 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
 
   return {
     updatedAt: formatDateTime(new Date()),
-    activeArea: "Pantura Jawa Tengah",
+    activeArea: "Demo Mining Site",
     kpis: {
       maxSubsidence: formatSignedCm(maxSubsidence),
       averageSubsidence: formatSignedCm(averageSubsidence),
       waterLevel: formatMeters(latestWater?.reading.waterLevelM),
       floodRisk: topRisk?.status ?? "Normal",
-      activePoints: `${activeLoggerCount}/${dataLoggers.length}`,
+      activePoints: `${points.length} sensor`,
       activeAlarms: openAlarmCount,
-      maxSubsidenceStation: maxSubsidenceReading?.point.name ?? "Belum ada GNSS",
+      maxSubsidenceStation: maxSubsidenceReading?.point.name ?? "Belum ada ADR",
       waterLevelStation: latestWater?.station.name ?? "Belum ada AWLR",
-      activeLoggerDetail: `${activeLoggerCount} dari ${dataLoggers.length} logger GNSS/AWLR aktif`,
+      activeLoggerDetail: `${activeLoggerCount} dari ${dataLoggers.length} logger sensor aktif`,
     },
     monitoringPoints: points,
     trend: buildTrendData(gnssReadings),
@@ -1593,7 +1594,8 @@ function toAwlrMonitoringStation(station: RawAwlrMonitoringStation): AwlrStation
     longitude: station.longitude,
     status: toRiskStatus(station.status),
     currentLevel: formatMeters(latest?.waterLevelM),
-    highTideWindow: nextWindowByArea[station.area.name] ?? "Belum dihitung",
+    highTideWindow:
+      nextWindowByArea[station.area.name] ?? "Inspeksi shift berikutnya",
     lastUpdate: formatClock(station.lastUpdate),
     device: device
       ? {
@@ -1799,7 +1801,8 @@ export async function getTideStations(): Promise<TideStation[]> {
         awas: formatMeters(latest?.awasM),
       },
       status: toRiskStatus(station.status),
-      highTideWindow: nextWindowByArea[station.area.name] ?? "Belum dihitung",
+      highTideWindow:
+        nextWindowByArea[station.area.name] ?? "Inspeksi shift berikutnya",
       lastUpdate: formatClock(station.lastUpdate),
     };
   });

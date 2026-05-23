@@ -68,6 +68,7 @@ export function toPrismaEventState(state: EventState): PrismaEventState {
 export function toPointType(type: PrismaPointType): PointType {
   if (type === "AWLR") return "AWLR";
   if (type === "CCTV") return "CCTV";
+  if (type === "WEATHER") return "WEATHER";
   return "GNSS";
 }
 
