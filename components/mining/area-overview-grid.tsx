@@ -115,6 +115,7 @@ export function AreaOverviewGrid({ areas }: { areas: MiningArea[] }) {
               <div className="mt-3 flex items-center justify-between gap-3">
                 <p className="text-xs text-muted-foreground">{area.nextInspection}</p>
                 <Button
+                  nativeButton={false}
                   render={<Link href={`/area-tambang/${area.id}`} />}
                   size="sm"
                   variant="outline"
