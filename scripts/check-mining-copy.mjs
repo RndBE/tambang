@@ -1,20 +1,34 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
-const roots = ["app", "components", "lib", "prisma", "README.md"];
+const roots = [
+  "app",
+  "components",
+  "lib",
+  "prisma",
+  "README.md",
+  "package.json",
+  "package-lock.json",
+  "docker-compose.yml",
+  ".env.example",
+  "rancangan_mining_monitoring_system.md",
+];
 const forbidden = [
   "pesisir",
   "pantura",
   "rob",
   "coastal monitor",
+  "dashboard-pemantauan-penurunan-pesisir",
   "dashboard pemantauan penurunan",
+  "gnss_dashboard",
+  "mining_monitoring",
   "muka air laut",
   "penurunan tanah",
   "tide gauge",
   "pasang",
 ];
 
-const extensions = new Set([".ts", ".tsx", ".js", ".md"]);
+const extensions = new Set([".ts", ".tsx", ".js", ".md", ".json", ".yml", ".yaml"]);
 const allowFiles = new Set([
   "prisma/schema.prisma",
   "docs/superpowers/specs/2026-05-23-mining-monitoring-system-design.md",
