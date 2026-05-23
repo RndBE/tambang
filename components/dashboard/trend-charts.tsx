@@ -33,9 +33,9 @@ export function TrendCharts({ trend, tide }: TrendChartsProps) {
       <Card className="min-w-0">
         <CardHeader className="pb-2 px-3">
           <div>
-            <CardTitle className="text-sm">Tren Penurunan Tanah</CardTitle>
+            <CardTitle className="text-sm">Tren Deformasi Lereng</CardTitle>
             <CardDescription className="text-xs">
-              Laju vertikal GNSS (cm/thn)
+              Laju pergerakan ADR/deformasi (cm/tahun)
             </CardDescription>
           </div>
         </CardHeader>
@@ -69,21 +69,21 @@ export function TrendCharts({ trend, tide }: TrendChartsProps) {
                 <Legend />
                 <Line
                   dataKey="gnssPkl01"
-                  name="PKL-01"
+                  name="ADR-HW-01"
                   stroke="#dc2626"
                   strokeWidth={2}
                   type="monotone"
                 />
                 <Line
                   dataKey="gnssSmg02"
-                  name="SMG-02"
+                  name="ADR-DUMP-01"
                   stroke="#ea580c"
                   strokeWidth={2}
                   type="monotone"
                 />
                 <Line
                   dataKey="gnssDmk03"
-                  name="DMK-03"
+                  name="ADR-PIT-A-01"
                   stroke="#0f766e"
                   strokeWidth={2}
                   type="monotone"
@@ -97,9 +97,9 @@ export function TrendCharts({ trend, tide }: TrendChartsProps) {
       <Card className="min-w-0">
         <CardHeader className="pb-2 px-3">
           <div>
-            <CardTitle className="text-sm">Muka Air Laut</CardTitle>
+            <CardTitle className="text-sm">Level Air Tambang</CardTitle>
             <CardDescription className="text-xs">
-              AWLR real-time vs ambang rob
+              AWLR sump/settling pond vs ambang operasi
             </CardDescription>
           </div>
         </CardHeader>

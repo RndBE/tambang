@@ -27,9 +27,9 @@ export function RiskPanel({ areas }: { areas: RiskArea[] }) {
     <Card>
       <CardHeader>
         <div>
-          <CardTitle>Panel Risiko Rob</CardTitle>
+          <CardTitle>Panel Risiko Lereng</CardTitle>
           <CardDescription>
-            Skor rule-based untuk prioritas respons
+            Skor rule-based untuk prioritas inspeksi geoteknik
           </CardDescription>
         </div>
       </CardHeader>
@@ -52,7 +52,7 @@ export function RiskPanel({ areas }: { areas: RiskArea[] }) {
                     <ArrowUpRight className="interactive-icon size-3.5 shrink-0 text-muted-foreground" />
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Jam rawan {area.nextWindow}
+                    Jadwal inspeksi {area.nextWindow}
                   </p>
                 </div>
                 <StatusBadge className="mt-0.5" status={area.status} />
@@ -61,7 +61,7 @@ export function RiskPanel({ areas }: { areas: RiskArea[] }) {
               <div className="mt-4 grid grid-cols-2 gap-2">
                 <div className="interactive-tile rounded-md bg-muted/45 p-2.5">
                   <p className="text-[11px] font-medium text-muted-foreground">
-                    Penurunan
+                    Pergerakan
                   </p>
                   <p className="mt-1 text-sm font-semibold tabular-nums">
                     {area.subsidenceRate}
@@ -69,7 +69,7 @@ export function RiskPanel({ areas }: { areas: RiskArea[] }) {
                 </div>
                 <div className="interactive-tile rounded-md bg-muted/45 p-2.5">
                   <p className="text-[11px] font-medium text-muted-foreground">
-                    Muka air
+                    Level air
                   </p>
                   <p className="mt-1 text-sm font-semibold tabular-nums">
                     {waterLevel}

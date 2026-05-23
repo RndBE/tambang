@@ -24,7 +24,7 @@ export function CctvGrid({ snapshots }: { snapshots: CctvSnapshot[] }) {
         <div>
           <CardTitle>Snapshot CCTV</CardTitle>
           <CardDescription>
-            Snapshot visual titik kritis pesisir
+            Snapshot visual titik kritis tambang
           </CardDescription>
         </div>
       </CardHeader>

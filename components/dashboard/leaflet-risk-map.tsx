@@ -31,7 +31,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import type { MonitoringPoint, PointType, RiskStatus } from "@/lib/types"
 
-const panturaBounds: LatLngBoundsExpression = [
+const miningSiteBounds: LatLngBoundsExpression = [
   [-7.08, 109.55],
   [-6.72, 110.75],
 ]
@@ -44,10 +44,10 @@ const riskColors: Record<RiskStatus, string> = {
 }
 
 const typeLabel: Record<PointType, string> = {
-  GNSS: "GNSS",
+  GNSS: "ADR",
   AWLR: "AWLR",
   CCTV: "CCTV",
-  WEATHER: "Weather",
+  WEATHER: "Sensor",
 }
 
 const pointTypes: PointType[] = ["GNSS", "AWLR", "CCTV", "WEATHER"]
@@ -207,7 +207,7 @@ export default function LeafletRiskMap({
   return (
     <div className="relative h-full min-h-[400px] overflow-hidden">
       <MapContainer
-        bounds={panturaBounds}
+        bounds={miningSiteBounds}
         boundsOptions={{ padding: [26, 26] }}
         className="h-full w-full"
         maxBounds={[
@@ -309,7 +309,7 @@ export default function LeafletRiskMap({
               Layer
             </div>
             <div className="flex items-center gap-1">
-              <Badge variant="outline">Pantura</Badge>
+              <Badge variant="outline">Demo Mining Site</Badge>
               <Button
                 aria-label="Tutup kontrol peta"
                 onClick={() => setControlsOpen(false)}
@@ -347,7 +347,7 @@ export default function LeafletRiskMap({
                     checked={enabledTypes.has(type)}
                     onCheckedChange={() => toggleType(type)}
                   />
-                  {type}
+                  {typeLabel[type]}
                 </Label>
               ))}
             </div>
@@ -372,7 +372,7 @@ export default function LeafletRiskMap({
       <div className="pointer-events-none absolute bottom-4 left-3 z-[400] flex flex-wrap items-center gap-3 rounded-lg border bg-background/95 px-3 py-2 text-xs shadow-sm backdrop-blur">
         <span className="flex items-center gap-1.5">
           <RadioTower className="size-3.5 text-slate-700" />
-          GNSS
+          ADR
         </span>
         <span className="flex items-center gap-1.5">
           <Waves className="size-3.5 text-slate-700" />
@@ -384,7 +384,7 @@ export default function LeafletRiskMap({
         </span>
         <span className="flex items-center gap-1.5">
           <CloudSun className="size-3.5 text-slate-700" />
-          Weather
+          Sensor
         </span>
         <span className="flex items-center gap-1.5 border-l pl-3 text-muted-foreground">
           <EyeIcon className="size-3.5" />

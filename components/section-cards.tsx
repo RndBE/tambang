@@ -29,7 +29,7 @@ export function SectionCards({ summary }: SectionCardsProps) {
     <div className="grid grid-cols-1 gap-3 px-4 *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
       <Card className="@container/card interactive-card border-rose-200/70 bg-gradient-to-br from-rose-50/90 via-card to-card">
         <CardHeader>
-          <CardDescription>Penurunan Maks</CardDescription>
+          <CardDescription>Pergerakan Maks</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums text-rose-950 @[250px]/card:text-3xl">
             {summary.kpis.maxSubsidence}
           </CardTitle>
@@ -50,13 +50,13 @@ export function SectionCards({ summary }: SectionCardsProps) {
             <RadioTowerIcon className="interactive-icon size-4 text-rose-600" />
           </div>
           <div className="text-muted-foreground">
-            Latest GNSS: {summary.kpis.maxSubsidenceStation}
+            Latest ADR: {summary.kpis.maxSubsidenceStation}
           </div>
         </CardFooter>
       </Card>
       <Card className="@container/card interactive-card border-sky-200/70 bg-gradient-to-br from-sky-50/90 via-card to-card">
         <CardHeader>
-          <CardDescription>Muka Air</CardDescription>
+          <CardDescription>Level Air Tambang</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums text-sky-950 @[250px]/card:text-3xl">
             {summary.kpis.waterLevel}
           </CardTitle>
@@ -73,13 +73,13 @@ export function SectionCards({ summary }: SectionCardsProps) {
             <TrendingUpIcon className="interactive-icon size-4 text-sky-600" />
           </div>
           <div className="text-muted-foreground">
-            Nilai terbaru dari logger AWLR
+            Nilai terbaru dari logger AWLR sump/pond
           </div>
         </CardFooter>
       </Card>
       <Card className="@container/card interactive-card border-emerald-200/70 bg-gradient-to-br from-emerald-50/90 via-card to-card">
         <CardHeader>
-          <CardDescription>Titik Aktif</CardDescription>
+          <CardDescription>Sensor Aktif</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums text-emerald-950 @[250px]/card:text-3xl">
             {summary.kpis.activePoints}
           </CardTitle>
@@ -96,7 +96,7 @@ export function SectionCards({ summary }: SectionCardsProps) {
             <ActivityIcon className="interactive-icon size-4 text-emerald-600" />
           </div>
           <div className="text-muted-foreground">
-            Status dihitung dari data logger backend
+            Status dihitung dari logger sensor tambang
           </div>
         </CardFooter>
       </Card>

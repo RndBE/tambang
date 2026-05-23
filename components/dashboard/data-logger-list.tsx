@@ -111,10 +111,10 @@ export function DataLoggerList({ loggers }: DataLoggerListProps) {
           <div>
             <div className="flex items-center gap-2">
               <span className="size-2.5 rounded-full bg-sky-500 shadow-[0_0_0_4px_rgb(14_165_233_/_0.12)]" />
-              <CardTitle>Data Logger Sistem</CardTitle>
+              <CardTitle>Data Logger Sensor</CardTitle>
             </div>
             <CardDescription>
-              GNSS dan AWLR dengan interval pengukuran 1 menit
+              ADR, AWLR, ARR, piezometer, kualitas air, gas, debu, dan CCTV
             </CardDescription>
           </div>
           <Badge className="border-sky-200 bg-white/80 text-sky-700" variant="outline">
@@ -142,6 +142,8 @@ export function DataLoggerList({ loggers }: DataLoggerListProps) {
               {loggers.map((logger) => {
                 const TypeIcon = logger.pointType === "GNSS" ? RadioTower : Waves;
                 const accent = loggerTypeAccent[logger.pointType];
+                const visiblePointType =
+                  logger.pointType === "GNSS" ? "ADR" : logger.pointType;
 
                 return (
                   <TableRow className="group/logger" key={logger.id}>
@@ -159,7 +161,7 @@ export function DataLoggerList({ loggers }: DataLoggerListProps) {
                           <div className="flex flex-wrap items-center gap-2">
                             <p className="font-medium">{logger.name}</p>
                             <Badge className={accent.badge} variant="outline">
-                              {logger.pointType}
+                              {visiblePointType}
                             </Badge>
                           </div>
                           <p className="mt-1 text-xs text-muted-foreground">
