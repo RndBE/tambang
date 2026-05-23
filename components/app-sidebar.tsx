@@ -219,7 +219,7 @@ export function AppSidebar({
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavProjects label="Akses Cepat" projects={data.projects} />
+        {/* <NavProjects label="Akses Cepat" projects={data.projects} /> */}
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={user} />
