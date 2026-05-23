@@ -29,7 +29,7 @@ export function LoginMonitoringVisual({ roles }: { roles: UserRole[] }) {
           <div className="login-command-card absolute inset-x-8 top-6 h-[430px] overflow-hidden rounded-xl border bg-background shadow-sm">
             <div className="absolute left-5 top-5 z-10 flex items-center gap-2">
               <Badge variant="secondary">Demo Mining Site</Badge>
-              <Badge variant="outline">Pantura</Badge>
+              <Badge variant="outline">Mining Monitoring System</Badge>
             </div>
             <div className="absolute right-5 top-5 z-10 rounded-md border bg-background/80 px-3 py-2 text-xs text-muted-foreground backdrop-blur">
               19 titik data aktif
@@ -115,14 +115,14 @@ export function LoginMonitoringVisual({ roles }: { roles: UserRole[] }) {
             />
             <MonitoringMarker
               className="left-[73%] top-[30%]"
-              label="CCTV Tanggul"
+              label="CCTV North Highwall"
               tone="red"
             />
 
             <div className="absolute bottom-5 left-5 right-5 grid grid-cols-3 gap-3">
-              <MetricTile label="Subsidence" value="-8.2" unit="cm/tahun" />
-              <MetricTile label="Muka air" value="1.89" unit="m" />
-              <MetricTile label="Alarm" value="3" unit="aktif" />
+              <MetricTile label="ADR displacement" value="-8.2" unit="mm/jam" />
+              <MetricTile label="Pore pressure" value="1.89" unit="bar" />
+              <MetricTile label="Slope Risk" value="3" unit="aktif" />
             </div>
           </div>
 
@@ -189,7 +189,7 @@ export function LoginMonitoringVisual({ roles }: { roles: UserRole[] }) {
               <div>
                 <p className="font-medium">3 event perlu atensi</p>
                 <p className="text-xs text-muted-foreground">
-                  Rob, baterai rendah, dan sinyal lemah
+                  Gas Alert, Settling Pond, dan South Dump
                 </p>
               </div>
             </div>

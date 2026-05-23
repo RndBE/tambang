@@ -39,6 +39,7 @@ export function NavUser({
   const router = useRouter()
 
   function logout() {
+    window.localStorage.removeItem("mining:user")
     window.localStorage.removeItem("gnss:user")
     router.push("/login")
     router.refresh()

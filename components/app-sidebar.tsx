@@ -53,8 +53,6 @@ function getData(activePath = "/") {
           "/",
           "/peta-risiko",
           "/analisa-data",
-          "/gnss",
-          "/awlr",
           "/cctv",
         ]),
         items: [
