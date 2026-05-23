@@ -36,7 +36,7 @@ Belum dilakukan:
 Isi `.env` dengan koneksi MySQL:
 
 ```env
-DATABASE_URL="mysql://USER:PASSWORD@HOST:3306/mining_monitoring"
+DATABASE_URL="mysql://USER:PASSWORD@HOST:3306/gnss_tambang"
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
 ```
 
