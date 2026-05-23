@@ -5,35 +5,47 @@ import { useMemo, useState } from "react"
 import {
   ActivityIcon,
   BatteryIcon,
+  CameraIcon,
+  CloudSunIcon,
   CloudRainIcon,
-  CrosshairIcon,
+  DropletsIcon,
+  FlaskConicalIcon,
   GaugeIcon,
   Layers3Icon,
   MapPinIcon,
+  RadioTowerIcon,
   RulerIcon,
   SatelliteIcon,
   SearchIcon,
   SignalIcon,
   SlidersHorizontalIcon,
+  Volume2Icon,
   WavesIcon,
+  WindIcon,
 } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
-  formatMineNetworkValue,
-  getMineNetworkStatusSummary,
-  getMineNetworkTypeSummary,
-  mineNetworkLines,
-  mineNetworkSensors,
-  mineNetworkTypeLabels,
-  type MineNetworkSensor,
-  type MineNetworkSensorStatus,
-  type MineNetworkSensorType,
-} from "@/lib/asaba-mine-network"
+  formatMiningSensorValue,
+  getMiningAreaName,
+  getMiningAreas,
+  getMiningSensors,
+  getMiningSensorTypeSummary,
+  getMiningStatusSummary,
+  getPrioritySensors,
+  miningNetworkLines,
+  miningSensorTypeLabels,
+  type MiningSensor,
+  type MiningSensorStatus,
+  type MiningSensorType,
+} from "@/lib/mining-area-catalog"
 import { cn } from "@/lib/utils"
 
-const sensorTypes: MineNetworkSensorType[] = [
+const miningSensors = getMiningSensors()
+const miningAreas = getMiningAreas()
+
+const sensorTypes: MiningSensorType[] = [
   "tiltmeter",
   "crack-meter",
   "piezometer",
@@ -41,6 +53,13 @@ const sensorTypes: MineNetworkSensorType[] = [
   "vibration",
   "gnss",
   "adr",
+  "awlr",
+  "awqr",
+  "aws",
+  "cctv",
+  "dust",
+  "noise",
+  "gas",
 ]
 
 const sensorTypeIcons = {
@@ -50,8 +69,15 @@ const sensorTypeIcons = {
   "rain-gauge": CloudRainIcon,
   vibration: ActivityIcon,
   gnss: SatelliteIcon,
-  adr: CrosshairIcon,
-} satisfies Record<MineNetworkSensorType, ElementType>
+  adr: RadioTowerIcon,
+  awlr: DropletsIcon,
+  awqr: FlaskConicalIcon,
+  aws: CloudSunIcon,
+  cctv: CameraIcon,
+  dust: WindIcon,
+  noise: Volume2Icon,
+  gas: GaugeIcon,
+} satisfies Record<MiningSensorType, ElementType>
 
 const sensorTypeColors = {
   tiltmeter: "#2f6fed",
@@ -61,7 +87,14 @@ const sensorTypeColors = {
   vibration: "#7c3aed",
   gnss: "#0f766e",
   adr: "#15803d",
-} satisfies Record<MineNetworkSensorType, string>
+  awlr: "#0284c7",
+  awqr: "#0d9488",
+  aws: "#ca8a04",
+  cctv: "#475569",
+  dust: "#a16207",
+  noise: "#be123c",
+  gas: "#dc2626",
+} satisfies Record<MiningSensorType, string>
 
 const statusStyles = {
   normal: {
@@ -89,7 +122,7 @@ const statusStyles = {
     ring: "ring-red-500",
   },
 } satisfies Record<
-  MineNetworkSensorStatus,
+  MiningSensorStatus,
   {
     label: string
     dot: string
@@ -101,10 +134,10 @@ const statusStyles = {
 >
 
 function getSensorById(id: string) {
-  return mineNetworkSensors.find((sensor) => sensor.id === id)
+  return miningSensors.find((sensor) => sensor.id === id)
 }
 
-function StatusPill({ status }: { status: MineNetworkSensorStatus }) {
+function StatusPill({ status }: { status: MiningSensorStatus }) {
   const style = statusStyles[status]
 
   return (
@@ -127,9 +160,9 @@ function SensorMarker({
   selected,
   onSelect,
 }: {
-  sensor: MineNetworkSensor
+  sensor: MiningSensor
   selected: boolean
-  onSelect: (sensor: MineNetworkSensor) => void
+  onSelect: (sensor: MiningSensor) => void
 }) {
   const Icon = sensorTypeIcons[sensor.type]
   const color = sensorTypeColors[sensor.type]
@@ -170,39 +203,40 @@ function MetricBox({ label, value }: { label: string; value: string }) {
 }
 
 export function MineNetworkMap() {
-  const [selectedType, setSelectedType] = useState<MineNetworkSensorType | "all">("all")
+  const [selectedType, setSelectedType] = useState<MiningSensorType | "all">("all")
+  const [selectedAreaId, setSelectedAreaId] = useState<string | "all">("all")
   const [selectedId, setSelectedId] = useState<string | null>(
-    mineNetworkSensors[0]?.id ?? null,
+    miningSensors[0]?.id ?? null,
   )
   const [query, setQuery] = useState("")
-  const statusSummary = getMineNetworkStatusSummary(mineNetworkSensors)
-  const typeSummary = getMineNetworkTypeSummary(mineNetworkSensors)
+  const statusSummary = getMiningStatusSummary(miningSensors)
+  const typeSummary = getMiningSensorTypeSummary(miningSensors)
 
   const filteredSensors = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
 
-    return mineNetworkSensors.filter((sensor) => {
+    return miningSensors.filter((sensor) => {
       const matchesType = selectedType === "all" || sensor.type === selectedType
+      const matchesArea = selectedAreaId === "all" || sensor.areaId === selectedAreaId
       const matchesQuery =
         !normalizedQuery ||
         sensor.name.toLowerCase().includes(normalizedQuery) ||
         sensor.id.toLowerCase().includes(normalizedQuery) ||
-        sensor.zone.toLowerCase().includes(normalizedQuery)
+        sensor.zone.toLowerCase().includes(normalizedQuery) ||
+        sensor.functionLabel.toLowerCase().includes(normalizedQuery) ||
+        getMiningAreaName(sensor.areaId).toLowerCase().includes(normalizedQuery)
 
-      return matchesType && matchesQuery
+      return matchesType && matchesArea && matchesQuery
     })
-  }, [query, selectedType])
+  }, [query, selectedAreaId, selectedType])
 
   const selectedSensor = selectedId
-    ? mineNetworkSensors.find((sensor) => sensor.id === selectedId) ?? null
+    ? miningSensors.find((sensor) => sensor.id === selectedId) ?? null
     : null
 
-  const prioritySensors = mineNetworkSensors
-    .filter((sensor) => sensor.status !== "normal")
-    .sort((sensorA, sensorB) => {
-      const severity = { danger: 0, caution: 1, normal: 2 }
-      return severity[sensorA.status] - severity[sensorB.status]
-    })
+  const prioritySensors = getPrioritySensors(
+    selectedAreaId === "all" ? undefined : selectedAreaId,
+  )
 
   return (
     <div className="grid gap-3 px-4 py-3 lg:px-6">
@@ -212,7 +246,7 @@ export function MineNetworkMap() {
             <div className="flex items-center justify-between gap-2">
               <div className="min-w-0">
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  ASABA Mine Network
+                  Mining Area Network
                 </p>
                 <h2 className="truncate text-lg font-bold">Peta Tambang</h2>
               </div>
@@ -259,11 +293,37 @@ export function MineNetworkMap() {
                     variant={selectedType === type ? "default" : "outline"}
                   >
                     <Icon className="h-4 w-4" />
-                    <span className="truncate">{mineNetworkTypeLabels[type]}</span>
+                    <span className="truncate">{miningSensorTypeLabels[type]}</span>
                     <span className="ml-auto text-xs">{typeSummary[type]}</span>
                   </Button>
                 )
               })}
+            </div>
+            <div className="mt-4 border-t pt-3">
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Area Tambang
+              </h4>
+              <div className="mt-2 grid gap-2">
+                <Button
+                  className="justify-start"
+                  onClick={() => setSelectedAreaId("all")}
+                  variant={selectedAreaId === "all" ? "default" : "outline"}
+                >
+                  Semua Area
+                  <span className="ml-auto text-xs">{miningSensors.length}</span>
+                </Button>
+                {miningAreas.map((area) => (
+                  <Button
+                    className="justify-start"
+                    key={area.id}
+                    onClick={() => setSelectedAreaId(area.id)}
+                    variant={selectedAreaId === area.id ? "default" : "outline"}
+                  >
+                    <span className="truncate">{area.name}</span>
+                    <span className="ml-auto text-xs">{area.sensorIds.length}</span>
+                  </Button>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -392,14 +452,14 @@ export function MineNetworkMap() {
               <div className="rounded-lg border bg-background/95 px-3 py-2 shadow-sm backdrop-blur">
                 <div className="flex items-center gap-2 text-xs font-bold text-primary">
                   <MapPinIcon className="h-4 w-4" />
-                  Peta Tambang ASABA
+                  Peta Tambang Area
                 </div>
                 <p className="mt-1 text-[11px] text-muted-foreground">
-                  {filteredSensors.length} dari {statusSummary.total} titik sensor dummy
+                  {filteredSensors.length} dari {statusSummary.total} titik sensor area
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
-                {(["normal", "caution", "danger"] as MineNetworkSensorStatus[]).map((status) => (
+                {(["normal", "caution", "danger"] as MiningSensorStatus[]).map((status) => (
                   <StatusPill key={status} status={status} />
                 ))}
               </div>
@@ -410,7 +470,7 @@ export function MineNetworkMap() {
               preserveAspectRatio="none"
               viewBox="0 0 100 100"
             >
-              {mineNetworkLines.map(([fromId, toId]) => {
+              {miningNetworkLines.map(([fromId, toId]) => {
                 const from = getSensorById(fromId)
                 const to = getSensorById(toId)
                 if (!from || !to) return null
@@ -447,7 +507,7 @@ export function MineNetworkMap() {
                 return (
                   <Badge className="gap-1.5" key={type} variant="outline">
                     <Icon className="h-3.5 w-3.5" style={{ color: sensorTypeColors[type] }} />
-                    {mineNetworkTypeLabels[type]}
+                    {miningSensorTypeLabels[type]}
                   </Badge>
                 )
               })}
@@ -470,13 +530,17 @@ export function MineNetworkMap() {
                 <StatusPill status={selectedSensor.status} />
               </div>
               <div className="mt-3 grid grid-cols-2 gap-2">
-                <MetricBox label="Nilai" value={formatMineNetworkValue(selectedSensor)} />
+                <MetricBox label="Nilai" value={formatMiningSensorValue(selectedSensor)} />
                 <MetricBox label="Trend" value={selectedSensor.trend} />
               </div>
               <dl className="mt-3 grid gap-2 text-xs">
                 <div className="flex justify-between gap-3 border-b pb-2">
                   <dt className="text-muted-foreground">Tipe</dt>
-                  <dd className="font-semibold">{mineNetworkTypeLabels[selectedSensor.type]}</dd>
+                  <dd className="font-semibold">{miningSensorTypeLabels[selectedSensor.type]}</dd>
+                </div>
+                <div className="flex justify-between gap-3 border-b pb-2">
+                  <dt className="text-muted-foreground">Area</dt>
+                  <dd className="text-right font-semibold">{getMiningAreaName(selectedSensor.areaId)}</dd>
                 </div>
                 <div className="flex justify-between gap-3 border-b pb-2">
                   <dt className="text-muted-foreground">Zona</dt>

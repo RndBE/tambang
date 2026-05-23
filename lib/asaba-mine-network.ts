@@ -1,19 +1,21 @@
-export type MineNetworkSensorType =
+export type MineSensorType =
   | "tiltmeter"
   | "crack-meter"
   | "piezometer"
   | "rain-gauge"
   | "vibration"
   | "gnss"
-  | "adr"
 
-export type MineNetworkSensorStatus = "normal" | "caution" | "danger"
+export type MineSensorStatus = "normal" | "caution" | "danger"
+
+export type MineNetworkSensorType = MineSensorType
+export type MineNetworkSensorStatus = MineSensorStatus
 
 export type MineNetworkSensor = {
   id: string
   name: string
-  type: MineNetworkSensorType
-  status: MineNetworkSensorStatus
+  type: MineSensorType
+  status: MineSensorStatus
   zone: string
   criticalPoint: string
   x: number
@@ -28,193 +30,386 @@ export type MineNetworkSensor = {
   note: string
 }
 
-export const mineNetworkTypeLabels: Record<MineNetworkSensorType, string> = {
+export type MineSensor3DPoint = {
+  id: string
+  name: string
+  type: MineSensorType
+  status: MineSensorStatus
+  x: number
+  y: number
+  z: number
+  depth: number
+}
+
+export type MineSensorGeoPoint = {
+  id: string
+  name: string
+  type: MineSensorType
+  status: MineSensorStatus
+  latitude: number
+  longitude: number
+  elevation: number
+  value: number
+  unit: string
+}
+
+export const mineSensorTypeLabels: Record<MineSensorType, string> = {
   tiltmeter: "Tiltmeter",
   "crack-meter": "Crack Meter",
   piezometer: "Piezometer",
   "rain-gauge": "Rain Gauge",
   vibration: "Vibration",
   gnss: "GNSS",
-  adr: "ADR",
 }
+
+export const mineNetworkTypeLabels = mineSensorTypeLabels
 
 export const mineNetworkSensors: MineNetworkSensor[] = [
   {
-    id: "TLT-HW-01",
-    name: "Tiltmeter North Highwall",
+    id: "TLT-01",
+    name: "Tiltmeter North Wall",
     type: "tiltmeter",
-    status: "caution",
-    zone: "North Highwall",
+    status: "normal",
+    zone: "Pit Utara",
     criticalPoint: "Bench 740",
-    x: 26,
-    y: 24,
-    value: 3.8,
+    x: 27,
+    y: 22,
+    value: 1.8,
     unit: "deg",
-    threshold: "3.0-5.0 deg",
-    trend: "naik",
-    lastUpdate: "10:42",
+    threshold: "< 3.0 deg",
+    trend: "stabil",
+    lastUpdate: "10:42 WIB",
     battery: 88,
     signal: 92,
-    note: "Kemiringan meningkat setelah hujan shift pagi.",
+    note: "Kemiringan masih dalam rentang operasi.",
   },
   {
-    id: "ADR-HW-01",
-    name: "ADR North Highwall 01",
-    type: "adr",
+    id: "TLT-02",
+    name: "Tiltmeter Highwall Timur",
+    type: "tiltmeter",
     status: "danger",
-    zone: "North Highwall",
-    criticalPoint: "Highwall Crest",
-    x: 70,
-    y: 30,
-    value: 57.9,
-    unit: "mm",
-    threshold: "> 50 mm",
+    zone: "Pit Timur",
+    criticalPoint: "Highwall 812",
+    x: 71,
+    y: 28,
+    value: 5.7,
+    unit: "deg",
+    threshold: "> 5.0 deg",
     trend: "naik",
-    lastUpdate: "10:45",
-    battery: 76,
-    signal: 82,
-    note: "Target ADR masuk prioritas inspeksi geoteknik.",
+    lastUpdate: "10:43 WIB",
+    battery: 74,
+    signal: 86,
+    note: "Perlu inspeksi geoteknik dan pembatasan akses di bawah highwall.",
   },
   {
-    id: "GNSS-HW-02",
-    name: "GNSS Highwall Crest 02",
-    type: "gnss",
-    status: "danger",
-    zone: "North Highwall",
-    criticalPoint: "Crest Line",
-    x: 62,
-    y: 50,
-    value: 64.3,
-    unit: "mm",
-    threshold: "> 55 mm",
-    trend: "naik",
-    lastUpdate: "10:46",
+    id: "TLT-03",
+    name: "Tiltmeter Waste Dump",
+    type: "tiltmeter",
+    status: "normal",
+    zone: "Waste Dump",
+    criticalPoint: "Dump Crest",
+    x: 16,
+    y: 65,
+    value: 0.9,
+    unit: "deg",
+    threshold: "< 3.0 deg",
+    trend: "turun",
+    lastUpdate: "10:39 WIB",
     battery: 91,
-    signal: 90,
-    note: "Pergerakan horizontal GNSS melebihi ambang siaga.",
+    signal: 77,
+    note: "Tidak ada perubahan kemiringan signifikan.",
   },
   {
-    id: "PZ-DP-01",
-    name: "Piezometer South Dump",
-    type: "piezometer",
+    id: "CRK-01",
+    name: "Crack Meter Crest A",
+    type: "crack-meter",
     status: "caution",
-    zone: "South Dump",
-    criticalPoint: "Dump Toe",
-    x: 22,
-    y: 72,
-    value: 31.4,
-    unit: "kPa",
-    threshold: "25-38 kPa",
+    zone: "Pit Barat",
+    criticalPoint: "Crest A",
+    x: 38,
+    y: 33,
+    value: 12.4,
+    unit: "mm",
+    threshold: "10-18 mm",
     trend: "naik",
-    lastUpdate: "10:40",
-    battery: 72,
-    signal: 75,
-    note: "Tekanan air pori naik, korelasikan dengan drainase disposal.",
+    lastUpdate: "10:41 WIB",
+    battery: 82,
+    signal: 81,
+    note: "Retakan melebar perlahan, pantau interval lebih rapat.",
   },
   {
-    id: "CRK-PA-01",
-    name: "Crack Meter Pit A",
+    id: "CRK-02",
+    name: "Crack Meter Ramp Selatan",
     type: "crack-meter",
     status: "normal",
-    zone: "Pit A",
-    criticalPoint: "Crest A",
-    x: 48,
+    zone: "Ramp Selatan",
+    criticalPoint: "Haul Road S2",
+    x: 55,
+    y: 73,
+    value: 4.6,
+    unit: "mm",
+    threshold: "< 10 mm",
+    trend: "stabil",
+    lastUpdate: "10:38 WIB",
+    battery: 79,
+    signal: 89,
+    note: "Retakan stabil di sisi jalan angkut.",
+  },
+  {
+    id: "CRK-03",
+    name: "Crack Meter Bench 690",
+    type: "crack-meter",
+    status: "normal",
+    zone: "Pit Tengah",
+    criticalPoint: "Bench 690",
+    x: 47,
     y: 42,
     value: 6.1,
     unit: "mm",
     threshold: "< 10 mm",
     trend: "stabil",
-    lastUpdate: "10:44",
+    lastUpdate: "10:44 WIB",
     battery: 93,
     signal: 94,
-    note: "Retakan minor dan stabil.",
+    note: "Retakan minor, tidak ada percepatan deformasi.",
   },
   {
-    id: "ARR-HW-01",
+    id: "PZO-01",
+    name: "Piezometer Toe Utara",
+    type: "piezometer",
+    status: "normal",
+    zone: "Pit Utara",
+    criticalPoint: "Toe Drain N1",
+    x: 32,
+    y: 50,
+    value: 17.2,
+    unit: "kPa",
+    threshold: "< 25 kPa",
+    trend: "turun",
+    lastUpdate: "10:36 WIB",
+    battery: 86,
+    signal: 78,
+    note: "Tekanan air pori menurun setelah pompa aktif.",
+  },
+  {
+    id: "PZO-02",
+    name: "Piezometer East Slope",
+    type: "piezometer",
+    status: "danger",
+    zone: "Pit Timur",
+    criticalPoint: "Seepage Line E4",
+    x: 76,
+    y: 47,
+    value: 42.8,
+    unit: "kPa",
+    threshold: "> 38 kPa",
+    trend: "naik",
+    lastUpdate: "10:45 WIB",
+    battery: 68,
+    signal: 83,
+    note: "Tekanan air pori tinggi, cek drainase dan rembesan lereng.",
+  },
+  {
+    id: "PZO-03",
+    name: "Piezometer Dump Toe",
+    type: "piezometer",
+    status: "caution",
+    zone: "Waste Dump",
+    criticalPoint: "Toe Dump W3",
+    x: 22,
+    y: 77,
+    value: 31.4,
+    unit: "kPa",
+    threshold: "25-38 kPa",
+    trend: "naik",
+    lastUpdate: "10:40 WIB",
+    battery: 72,
+    signal: 75,
+    note: "Kenaikan terpantau setelah hujan, lanjutkan pemantauan.",
+  },
+  {
+    id: "RNG-01",
     name: "Rain Gauge Ridge",
     type: "rain-gauge",
     status: "normal",
-    zone: "North Highwall",
-    criticalPoint: "Weather Ridge",
-    x: 60,
-    y: 15,
+    zone: "Ridge",
+    criticalPoint: "Weather Station 1",
+    x: 61,
+    y: 14,
     value: 3.2,
     unit: "mm/h",
     threshold: "< 10 mm/h",
     trend: "turun",
-    lastUpdate: "10:45",
+    lastUpdate: "10:45 WIB",
     battery: 95,
     signal: 91,
     note: "Hujan ringan, belum memicu alarm hidrologi.",
   },
   {
-    id: "VIB-CR-01",
+    id: "RNG-02",
+    name: "Rain Gauge Selatan",
+    type: "rain-gauge",
+    status: "caution",
+    zone: "Ramp Selatan",
+    criticalPoint: "Weather Station 2",
+    x: 67,
+    y: 82,
+    value: 18.6,
+    unit: "mm/h",
+    threshold: "10-25 mm/h",
+    trend: "naik",
+    lastUpdate: "10:45 WIB",
+    battery: 90,
+    signal: 88,
+    note: "Intensitas hujan sedang, siapkan inspeksi drainase.",
+  },
+  {
+    id: "RNG-03",
+    name: "Rain Gauge Office",
+    type: "rain-gauge",
+    status: "normal",
+    zone: "Office",
+    criticalPoint: "Base Camp",
+    x: 86,
+    y: 68,
+    value: 1.1,
+    unit: "mm/h",
+    threshold: "< 10 mm/h",
+    trend: "stabil",
+    lastUpdate: "10:37 WIB",
+    battery: 97,
+    signal: 96,
+    note: "Kondisi area kantor normal.",
+  },
+  {
+    id: "VIB-01",
+    name: "Vibration Blasting North",
+    type: "vibration",
+    status: "normal",
+    zone: "Pit Utara",
+    criticalPoint: "Blast Block N7",
+    x: 43,
+    y: 24,
+    value: 1.6,
+    unit: "mm/s",
+    threshold: "< 3.0 mm/s",
+    trend: "stabil",
+    lastUpdate: "10:32 WIB",
+    battery: 84,
+    signal: 73,
+    note: "Getaran blasting terakhir masih aman.",
+  },
+  {
+    id: "VIB-02",
     name: "Vibration Crusher Line",
     type: "vibration",
     status: "normal",
     zone: "Crusher",
     criticalPoint: "Conveyor Transfer",
-    x: 84,
-    y: 40,
+    x: 83,
+    y: 39,
     value: 2.2,
     unit: "mm/s",
     threshold: "< 3.0 mm/s",
     trend: "stabil",
-    lastUpdate: "10:34",
+    lastUpdate: "10:34 WIB",
     battery: 81,
     signal: 87,
     note: "Getaran alat masih di bawah ambang.",
   },
   {
-    id: "ADR-DP-01",
-    name: "ADR South Dump 01",
-    type: "adr",
+    id: "VIB-03",
+    name: "Vibration Ramp Barat",
+    type: "vibration",
     status: "caution",
-    zone: "South Dump",
-    criticalPoint: "Dump Crest",
-    x: 38,
-    y: 66,
-    value: 28.8,
-    unit: "mm",
-    threshold: "20-50 mm",
+    zone: "Pit Barat",
+    criticalPoint: "Ramp W1",
+    x: 30,
+    y: 58,
+    value: 3.8,
+    unit: "mm/s",
+    threshold: "3.0-5.0 mm/s",
     trend: "naik",
-    lastUpdate: "10:43",
-    battery: 84,
+    lastUpdate: "10:44 WIB",
+    battery: 69,
     signal: 79,
-    note: "Displacement disposal meningkat perlahan.",
+    note: "Getaran meningkat, korelasikan dengan lalu lintas alat berat.",
   },
   {
-    id: "PZ-TD-01",
-    name: "Piezometer Tailing Dam",
-    type: "piezometer",
+    id: "GNS-01",
+    name: "GNSS Prism Crest Timur",
+    type: "gnss",
+    status: "caution",
+    zone: "Pit Timur",
+    criticalPoint: "Crest E2",
+    x: 68,
+    y: 36,
+    value: 24.5,
+    unit: "mm",
+    threshold: "20-35 mm",
+    trend: "naik",
+    lastUpdate: "10:43 WIB",
+    battery: 76,
+    signal: 82,
+    note: "Pergerakan horizontal meningkat di crest timur.",
+  },
+  {
+    id: "GNS-02",
+    name: "GNSS Dump Reference",
+    type: "gnss",
     status: "normal",
-    zone: "Tailing Dam",
-    criticalPoint: "Dam Toe",
-    x: 76,
-    y: 68,
-    value: 18.2,
-    unit: "kPa",
-    threshold: "< 25 kPa",
+    zone: "Waste Dump",
+    criticalPoint: "Reference W",
+    x: 12,
+    y: 84,
+    value: 8.3,
+    unit: "mm",
+    threshold: "< 20 mm",
     trend: "stabil",
-    lastUpdate: "10:36",
-    battery: 86,
-    signal: 78,
-    note: "Tekanan air pori masih dalam rentang normal.",
+    lastUpdate: "10:35 WIB",
+    battery: 89,
+    signal: 84,
+    note: "Titik referensi dump stabil.",
+  },
+  {
+    id: "GNS-03",
+    name: "GNSS Main Ramp",
+    type: "gnss",
+    status: "normal",
+    zone: "Ramp Utama",
+    criticalPoint: "Haul Road M1",
+    x: 58,
+    y: 55,
+    value: 11.7,
+    unit: "mm",
+    threshold: "< 20 mm",
+    trend: "stabil",
+    lastUpdate: "10:42 WIB",
+    battery: 92,
+    signal: 90,
+    note: "Pergerakan masih rendah di jalur angkut utama.",
   },
 ]
 
 export const mineNetworkLines: Array<[string, string]> = [
-  ["ARR-HW-01", "TLT-HW-01"],
-  ["TLT-HW-01", "ADR-HW-01"],
-  ["ADR-HW-01", "GNSS-HW-02"],
-  ["GNSS-HW-02", "CRK-PA-01"],
-  ["CRK-PA-01", "ADR-DP-01"],
-  ["ADR-DP-01", "PZ-DP-01"],
-  ["ADR-DP-01", "PZ-TD-01"],
-  ["ADR-HW-01", "VIB-CR-01"],
+  ["TLT-01", "VIB-01"],
+  ["VIB-01", "CRK-01"],
+  ["CRK-01", "PZO-01"],
+  ["PZO-01", "VIB-03"],
+  ["VIB-03", "TLT-03"],
+  ["TLT-03", "GNS-02"],
+  ["PZO-01", "GNS-03"],
+  ["GNS-03", "CRK-02"],
+  ["CRK-02", "RNG-02"],
+  ["GNS-03", "GNS-01"],
+  ["GNS-01", "TLT-02"],
+  ["TLT-02", "PZO-02"],
+  ["PZO-02", "VIB-02"],
+  ["VIB-02", "RNG-03"],
+  ["TLT-02", "RNG-01"],
 ]
 
-export function getMineNetworkStatusSummary(sensors: MineNetworkSensor[]) {
+export function getMineSensorStatusSummary(sensors: MineNetworkSensor[]) {
   return sensors.reduce(
     (summary, sensor) => {
       summary.total += 1
@@ -225,7 +420,7 @@ export function getMineNetworkStatusSummary(sensors: MineNetworkSensor[]) {
   )
 }
 
-export function getMineNetworkTypeSummary(sensors: MineNetworkSensor[]) {
+export function getMineSensorTypeSummary(sensors: MineNetworkSensor[]) {
   return sensors.reduce(
     (summary, sensor) => {
       summary[sensor.type] += 1
@@ -238,14 +433,60 @@ export function getMineNetworkTypeSummary(sensors: MineNetworkSensor[]) {
       "rain-gauge": 0,
       vibration: 0,
       gnss: 0,
-      adr: 0,
-    } satisfies Record<MineNetworkSensorType, number>,
+    } satisfies Record<MineSensorType, number>,
   )
 }
 
-export function formatMineNetworkValue(sensor: MineNetworkSensor) {
+export function formatMineSensorValue(sensor: MineNetworkSensor) {
   return `${sensor.value.toLocaleString("id-ID", {
     maximumFractionDigits: 1,
     minimumFractionDigits: Number.isInteger(sensor.value) ? 0 : 1,
   })} ${sensor.unit}`
 }
+
+export function getMineSensor3DPoints(sensors: MineNetworkSensor[]): MineSensor3DPoint[] {
+  return sensors.map((sensor) => ({
+    id: sensor.id,
+    name: sensor.name,
+    type: sensor.type,
+    status: sensor.status,
+    x: sensor.x,
+    y: sensor.y,
+    z: Math.max(16, Math.round(88 - sensor.y * 0.65)),
+    depth: Math.max(5, Math.round(sensor.y * 0.35)),
+  }))
+}
+
+export function getMineSensorGeoPoints(sensors: MineNetworkSensor[]): MineSensorGeoPoint[] {
+  const pitCenterLatitude = 3.649
+  const pitCenterLongitude = 117.2386
+  const latitudeScale = 0.0001
+  const longitudeScale = 0.000075
+
+  return sensors.map((sensor) => ({
+    id: sensor.id,
+    name: sensor.name,
+    type: sensor.type,
+    status: sensor.status,
+    latitude: Number((pitCenterLatitude + (50 - sensor.y) * latitudeScale).toFixed(4)),
+    longitude: Number((pitCenterLongitude + (sensor.x - 50) * longitudeScale).toFixed(4)),
+    elevation: Math.max(16, Math.round(88 - sensor.y * 0.65)),
+    value: sensor.value,
+    unit: sensor.unit,
+  }))
+}
+
+export function getMineSensorPrioritySummary(sensors: MineNetworkSensor[]) {
+  const dangerSensors = sensors.filter((sensor) => sensor.status === "danger")
+  const cautionSensors = sensors.filter((sensor) => sensor.status === "caution")
+
+  return {
+    dangerCount: dangerSensors.length,
+    cautionCount: cautionSensors.length,
+    topDangerIds: dangerSensors.slice(0, 3).map((sensor) => sensor.id),
+  }
+}
+
+export const getMineNetworkStatusSummary = getMineSensorStatusSummary
+export const getMineNetworkTypeSummary = getMineSensorTypeSummary
+export const formatMineNetworkValue = formatMineSensorValue
