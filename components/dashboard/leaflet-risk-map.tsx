@@ -51,13 +51,15 @@ const riskColors: Record<RiskStatus, string> = {
 }
 
 const typeLabel: Record<PointType, string> = {
-  GNSS: "ADR",
+  GNSS: "GNSS",
+  ADR: "ADR",
+  RTS: "RTS",
   AWLR: "AWLR",
   CCTV: "CCTV",
   WEATHER: "Sensor",
 }
 
-const pointTypes: PointType[] = ["GNSS", "AWLR", "CCTV", "WEATHER"]
+const pointTypes: PointType[] = ["GNSS", "ADR", "RTS", "AWLR", "CCTV", "WEATHER"]
 
 const riskStatuses: RiskStatus[] = ["Awas", "Siaga", "Waspada", "Normal"]
 
@@ -98,6 +100,26 @@ const typeIconSvg: Record<PointType, string> = {
       <path d="M10 20h4" />
       <path d="m12 12 2 8" />
       <path d="m12 12-2 8" />
+    </svg>
+  `,
+  ADR: `
+    <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="3" />
+      <circle cx="12" cy="12" r="7" />
+      <path d="M12 2v3" />
+      <path d="M12 19v3" />
+      <path d="M2 12h3" />
+      <path d="M19 12h3" />
+    </svg>
+  `,
+  RTS: `
+    <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M12 2v4" />
+      <path d="M8 6h8" />
+      <path d="M10 6v6h4V6" />
+      <circle cx="12" cy="14" r="3" />
+      <path d="M9 21h6" />
+      <path d="M12 17v4" />
     </svg>
   `,
   AWLR: `

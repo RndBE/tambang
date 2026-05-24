@@ -87,7 +87,7 @@ function getData(activePath = "/") {
         title: "Sensor",
         url: "/perangkat",
         icon: <RadioTowerIcon />,
-        isActive: isActive(activePath, ["/perangkat", "/gnss", "/awlr"]),
+        isActive: isActive(activePath, ["/perangkat", "/gnss", "/adr", "/awlr"]),
         items: [
           {
             title: "Perangkat Sensor",
@@ -98,6 +98,11 @@ function getData(activePath = "/") {
             title: "Deformasi Lereng",
             url: "/gnss",
             isActive: activePath === "/gnss",
+          },
+          {
+            title: "ADR / RTS Prism",
+            url: "/adr",
+            isActive: activePath.startsWith("/adr"),
           },
           {
             title: "Air & Cuaca",

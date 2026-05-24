@@ -69,6 +69,8 @@ export function toPointType(type: PrismaPointType): PointType {
   if (type === "AWLR") return "AWLR";
   if (type === "CCTV") return "CCTV";
   if (type === "WEATHER") return "WEATHER";
+  if (type === "ADR") return "ADR";
+  if (type === "RTS") return "RTS";
   return "GNSS";
 }
 

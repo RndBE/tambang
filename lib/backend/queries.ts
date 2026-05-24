@@ -37,6 +37,13 @@ import type {
   GnssTrendPoint,
   MaintenanceLog,
   MonitoringPoint,
+  PrismMetric,
+  PrismMonitoringData,
+  PrismParameter,
+  PrismStationSummary,
+  PrismStationType,
+  PrismSummary,
+  PrismTrendPoint,
   ReportTemplate,
   RiskStatus,
   RiskArea,
@@ -1994,4 +2001,378 @@ export async function getRiskWeights(): Promise<RiskWeightSetting[]> {
   return prisma.riskWeight.findMany({
     orderBy: { weight: "desc" },
   });
+}
+
+const prismParameterLabels: Record<PrismParameter, { label: string; unit: string }> = {
+  dx: { label: "ΔX (East)", unit: "mm" },
+  dy: { label: "ΔY (North)", unit: "mm" },
+  dz: { label: "ΔZ (Up)", unit: "mm" },
+  total: { label: "Total displacement", unit: "mm" },
+  velocity: { label: "Velocity", unit: "mm/hari" },
+  velocityYear: { label: "Velocity tahunan", unit: "cm/tahun" },
+};
+
+function normalizePrismParameter(value: string | null | undefined): PrismParameter {
+  if (
+    value === "dx" ||
+    value === "dy" ||
+    value === "dz" ||
+    value === "total" ||
+    value === "velocity" ||
+    value === "velocityYear"
+  ) {
+    return value;
+  }
+  return "total";
+}
+
+function toPrismStationType(type: "GNSS" | "ADR" | "RTS" | "AWLR" | "CCTV" | "WEATHER"): PrismStationType {
+  return type === "RTS" ? "RTS" : "ADR";
+}
+
+async function getRawPrismStations() {
+  return prisma.monitoringPoint.findMany({
+    where: { type: { in: ["ADR", "RTS"] } },
+    include: {
+      area: true,
+      devices: { orderBy: { name: "asc" } },
+      prisms: {
+        include: {
+          readings: {
+            orderBy: { recordedAt: "desc" },
+            take: 1,
+          },
+        },
+        orderBy: { code: "asc" },
+      },
+    },
+    orderBy: { code: "asc" },
+  });
+}
+
+type RawPrismStation = Awaited<ReturnType<typeof getRawPrismStations>>[number];
+type RawPrism = RawPrismStation["prisms"][number];
+
+function toPrismSummary(prism: RawPrism, fallbackUpdate: Date): PrismSummary {
+  const latest = prism.readings[0];
+  return {
+    id: prism.id,
+    code: prism.code,
+    label: prism.label,
+    status: toRiskStatus(prism.status),
+    visible: prism.visible,
+    latitude: prism.latitude,
+    longitude: prism.longitude,
+    baselineElevationM: prism.baselineElevationM,
+    lastUpdate: formatClock(latest?.recordedAt ?? prism.lastUpdate ?? fallbackUpdate),
+    latestDxMm: latest ? round(latest.dxMm) : 0,
+    latestDyMm: latest ? round(latest.dyMm) : 0,
+    latestDzMm: latest ? round(latest.dzMm) : 0,
+    latestTotalMm: latest ? round(latest.totalDisplacementMm) : 0,
+    latestVelocityMmDay: latest ? round(latest.velocityMmDay, 3) : 0,
+    latestVelocityCmYear: latest ? round(latest.velocityCmYear) : 0,
+    slopeDistanceM: latest?.slopeDistanceM ?? null,
+    notes: prism.notes,
+  };
+}
+
+function toPrismStationSummary(station: RawPrismStation): PrismStationSummary {
+  const prisms = station.prisms.map((prism) => toPrismSummary(prism, station.lastUpdate));
+  const visiblePrisms = prisms.filter((prism) => prism.visible);
+  const worst = visiblePrisms.reduce<PrismSummary | null>((acc, prism) => {
+    if (!acc) return prism;
+    return Math.abs(prism.latestTotalMm) > Math.abs(acc.latestTotalMm) ? prism : acc;
+  }, null);
+  const device =
+    station.devices.find((d) => d.type === "ADR" || d.type === "RTS" || d.type === "GNSS" || d.type === "LOGGER") ??
+    station.devices[0] ??
+    null;
+
+  const statusBreakdown = {
+    Normal: 0,
+    Waspada: 0,
+    Siaga: 0,
+    Awas: 0,
+  };
+  for (const prism of prisms) statusBreakdown[prism.status] += 1;
+
+  return {
+    id: station.code,
+    code: station.code,
+    name: station.name,
+    area: station.area.name,
+    type: toPrismStationType(station.type),
+    status: toRiskStatus(station.status),
+    latitude: station.latitude,
+    longitude: station.longitude,
+    coordinate: `${station.latitude.toFixed(5)}, ${station.longitude.toFixed(5)}`,
+    instrumentModel: station.instrumentModel ?? "-",
+    instrumentSerial: station.instrumentSerial ?? "-",
+    prismCount: prisms.length,
+    visiblePrismCount: visiblePrisms.length,
+    lostPrismCount: prisms.length - visiblePrisms.length,
+    worstPrismLabel: worst?.label ?? "-",
+    worstPrismDisplacement: worst?.latestTotalMm ?? 0,
+    worstPrismVelocity: worst?.latestVelocityMmDay ?? 0,
+    lastUpdate: formatClock(station.lastUpdate),
+    device: device
+      ? {
+          id: device.code,
+          name: device.name,
+          status: toDeviceStatus(device.status),
+          battery: device.battery,
+          signal: device.signal,
+          solarCharging: device.solarCharging,
+          firmwareVersion: device.firmwareVersion ?? "-",
+          lastData: formatClock(device.lastDataReceived),
+        }
+      : null,
+    statusBreakdown,
+  };
+}
+
+export async function getPrismStations(): Promise<PrismStationSummary[]> {
+  const stations = await getRawPrismStations();
+  return stations.map((station) => toPrismStationSummary(station));
+}
+
+export async function getPrismStation(
+  stationCode: string,
+): Promise<{ station: PrismStationSummary; prisms: PrismSummary[] } | null> {
+  const station = await prisma.monitoringPoint.findFirst({
+    where: {
+      code: stationCode,
+      type: { in: ["ADR", "RTS"] },
+    },
+    include: {
+      area: true,
+      devices: { orderBy: { name: "asc" } },
+      prisms: {
+        include: {
+          readings: {
+            orderBy: { recordedAt: "desc" },
+            take: 1,
+          },
+        },
+        orderBy: { code: "asc" },
+      },
+    },
+  });
+
+  if (!station) return null;
+
+  const summary = toPrismStationSummary(station);
+  const prisms = station.prisms.map((prism) => toPrismSummary(prism, station.lastUpdate));
+  return { station: summary, prisms };
+}
+
+function formatPrismValue(value: number, parameter: PrismParameter) {
+  const { unit } = prismParameterLabels[parameter];
+  const sign = value > 0 ? "+" : "";
+  if (parameter === "velocity") return `${sign}${value.toFixed(2)} ${unit}`;
+  if (parameter === "velocityYear") return `${sign}${value.toFixed(1)} ${unit}`;
+  if (parameter === "total") return `${value.toFixed(2)} ${unit}`;
+  return `${sign}${value.toFixed(2)} ${unit}`;
+}
+
+function buildPrismMetrics(prism: PrismSummary): PrismMetric[] {
+  return [
+    {
+      key: "total",
+      label: "Total displacement",
+      value: `${prism.latestTotalMm.toFixed(2)} mm`,
+      detail: prism.visible ? "Vektor 3D resultan" : "Prism tidak terlihat",
+    },
+    {
+      key: "dz",
+      label: "ΔZ (Up)",
+      value: `${prism.latestDzMm > 0 ? "+" : ""}${prism.latestDzMm.toFixed(2)} mm`,
+      detail: prism.latestDzMm < 0 ? "Penurunan vertikal" : "Kenaikan vertikal",
+    },
+    {
+      key: "dx",
+      label: "ΔX (East)",
+      value: `${prism.latestDxMm > 0 ? "+" : ""}${prism.latestDxMm.toFixed(2)} mm`,
+      detail: "Lateral timur",
+    },
+    {
+      key: "dy",
+      label: "ΔY (North)",
+      value: `${prism.latestDyMm > 0 ? "+" : ""}${prism.latestDyMm.toFixed(2)} mm`,
+      detail: "Lateral utara",
+    },
+    {
+      key: "velocity",
+      label: "Velocity",
+      value: `${prism.latestVelocityMmDay > 0 ? "+" : ""}${prism.latestVelocityMmDay.toFixed(3)} mm/hari`,
+      detail: "Rata-rata 24 jam",
+    },
+    {
+      key: "velocityYear",
+      label: "Velocity tahunan",
+      value: `${prism.latestVelocityCmYear > 0 ? "+" : ""}${prism.latestVelocityCmYear.toFixed(1)} cm/tahun`,
+      detail: "Ekstrapolasi linier",
+    },
+  ];
+}
+
+function aggregatePrismTrend(
+  rows: PrismTrendPoint[],
+  granularity: AnalysisGranularity,
+): PrismTrendPoint[] {
+  type Bucket = Omit<PrismTrendPoint, "period" | "recordedAt"> & {
+    count: number;
+    period: string;
+    recordedAt: string;
+  };
+  const buckets = new Map<string, Bucket>();
+
+  for (const row of rows) {
+    const recordedAt = new Date(row.recordedAt);
+    const key = getAnalysisBucketKey(recordedAt, granularity);
+    const bucket =
+      buckets.get(key) ??
+      ({
+        count: 0,
+        period: formatAnalysisBucketPeriod(recordedAt, granularity),
+        recordedAt: row.recordedAt,
+        dx: 0,
+        dy: 0,
+        dz: 0,
+        total: 0,
+        velocity: 0,
+        velocityYear: 0,
+      } satisfies Bucket);
+
+    bucket.count += 1;
+    bucket.recordedAt = row.recordedAt;
+    bucket.dx += row.dx;
+    bucket.dy += row.dy;
+    bucket.dz += row.dz;
+    bucket.total += row.total;
+    bucket.velocity += row.velocity;
+    bucket.velocityYear += row.velocityYear;
+    buckets.set(key, bucket);
+  }
+
+  return Array.from(buckets.values()).map((bucket) => ({
+    period: bucket.period,
+    recordedAt: bucket.recordedAt,
+    dx: round(bucket.dx / bucket.count),
+    dy: round(bucket.dy / bucket.count),
+    dz: round(bucket.dz / bucket.count),
+    total: round(bucket.total / bucket.count),
+    velocity: round(bucket.velocity / bucket.count, 3),
+    velocityYear: round(bucket.velocityYear / bucket.count, 2),
+  }));
+}
+
+export async function getPrismMonitoringData(filters: {
+  stationCode: string;
+  prismCode?: string | null;
+  parameter?: string | null;
+  range?: string | null;
+  dateFrom?: string | null;
+  dateTo?: string | null;
+  granularity?: string | null;
+}): Promise<PrismMonitoringData | null> {
+  const parameter = normalizePrismParameter(filters.parameter);
+  const range = normalizeGnssRange(filters.range);
+  const granularity = normalizeAnalysisGranularity(filters.granularity);
+
+  const station = await prisma.monitoringPoint.findFirst({
+    where: { code: filters.stationCode, type: { in: ["ADR", "RTS"] } },
+    include: {
+      area: true,
+      devices: { orderBy: { name: "asc" } },
+      prisms: {
+        include: {
+          readings: {
+            orderBy: { recordedAt: "desc" },
+            take: 1,
+          },
+        },
+        orderBy: { code: "asc" },
+      },
+    },
+  });
+
+  if (!station) return null;
+
+  const summary = toPrismStationSummary(station);
+  const prisms = station.prisms.map((prism) => toPrismSummary(prism, station.lastUpdate));
+  const selectedPrism =
+    prisms.find((prism) => prism.code === filters.prismCode) ??
+    prisms.find((prism) => prism.visible) ??
+    prisms[0];
+
+  if (!selectedPrism) {
+    return null;
+  }
+
+  const readingFilter: { gte?: Date; lte?: Date } = {};
+  const days = gnssRangeDays[range];
+  const dateFrom = parseDateBoundary(filters.dateFrom ?? null, "start");
+  const dateTo = parseDateBoundary(filters.dateTo ?? null, "end");
+  if (range === "custom") {
+    if (dateFrom) readingFilter.gte = dateFrom;
+    if (dateTo) readingFilter.lte = dateTo;
+  } else if (days != null) {
+    readingFilter.gte = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  }
+
+  const readings = await prisma.prismReading.findMany({
+    where: {
+      prismId: selectedPrism.id,
+      ...(Object.keys(readingFilter).length > 0
+        ? { recordedAt: readingFilter }
+        : {}),
+    },
+    orderBy: { recordedAt: "asc" },
+  });
+
+  const rawTrend: PrismTrendPoint[] = readings.map((reading) => ({
+    period: formatGnssPeriod(reading.recordedAt),
+    recordedAt: reading.recordedAt.toISOString(),
+    dx: round(reading.dxMm),
+    dy: round(reading.dyMm),
+    dz: round(reading.dzMm),
+    total: round(reading.totalDisplacementMm),
+    velocity: round(reading.velocityMmDay, 3),
+    velocityYear: round(reading.velocityCmYear, 2),
+  }));
+
+  const trend = aggregatePrismTrend(rawTrend, granularity);
+
+  const latestRaw = rawTrend.at(-1) ?? null;
+  const previousRaw = rawTrend.at(-2) ?? null;
+  const firstRaw = rawTrend[0] ?? null;
+  const latestValue = latestRaw
+    ? formatPrismValue(latestRaw[parameter], parameter)
+    : "-";
+  const deltaFromPrevious =
+    latestRaw && previousRaw
+      ? formatPrismValue(latestRaw[parameter] - previousRaw[parameter], parameter)
+      : "-";
+  const periodChange =
+    latestRaw && firstRaw
+      ? formatPrismValue(latestRaw[parameter] - firstRaw[parameter], parameter)
+      : "-";
+
+  return {
+    station: summary,
+    prisms,
+    selectedPrism,
+    selectedParameter: parameter,
+    selectedRange: range,
+    selectedGranularity: granularity,
+    trend,
+    metrics: buildPrismMetrics(selectedPrism),
+    analysis: {
+      latestValue,
+      deltaFromPrevious,
+      periodChange,
+      sampleCount: trend.length,
+    },
+  };
 }

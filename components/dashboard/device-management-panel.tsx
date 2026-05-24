@@ -62,7 +62,7 @@ import type {
 } from "@/lib/types"
 
 type PrismaDeviceStatus = "ONLINE" | "WEAK" | "OFFLINE" | "MAINTENANCE"
-type PrismaDeviceType = "GNSS" | "AWLR" | "CCTV" | "LOGGER" | "WEATHER"
+type PrismaDeviceType = "GNSS" | "ADR" | "RTS" | "AWLR" | "CCTV" | "LOGGER" | "WEATHER"
 type PrismaEventState = "OPEN" | "IN_PROGRESS" | "RESOLVED"
 
 type DeviceFormState = {
@@ -111,6 +111,8 @@ const eventStateClasses: Record<EventState, string> = {
 
 const deviceTypeItems: Array<{ label: string; value: PrismaDeviceType }> = [
   { label: "GNSS", value: "GNSS" },
+  { label: "ADR", value: "ADR" },
+  { label: "RTS", value: "RTS" },
   { label: "AWLR", value: "AWLR" },
   { label: "CCTV", value: "CCTV" },
   { label: "Logger", value: "LOGGER" },

@@ -11,5 +11,9 @@ const MineNetwork3DView = dynamic(
 export function RiskMap({ points }: { points: MonitoringPoint[] }) {
   void points
 
-  return <MineNetwork3DView />
+  return (
+    <div className="relative overflow-hidden rounded-xl ring-1 ring-foreground/10 shadow-sm">
+      <MineNetwork3DView />
+    </div>
+  )
 }

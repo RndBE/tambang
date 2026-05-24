@@ -16,6 +16,8 @@ enum RiskStatus {
 
 enum PointType {
   GNSS
+  ADR
+  RTS
   AWLR
   CCTV
   WEATHER
@@ -23,6 +25,8 @@ enum PointType {
 
 enum DeviceType {
   GNSS
+  ADR
+  RTS
   AWLR
   CCTV
   LOGGER
@@ -97,8 +101,12 @@ model MonitoringPoint {
   totalSubsidenceCm  Float?
   velocityCmYear     Float?
   lastUpdate         DateTime
+  instrumentModel    String?
+  instrumentSerial   String?
+  prismCount         Int?
   devices            Device[]
   gnssReadings       GnssReading[]
+  prisms             Prism[]
   waterReadings      WaterLevelReading[]
   weatherReadings    WeatherReading[]
   snapshots          CameraSnapshot[]
@@ -145,6 +153,48 @@ model GnssReading {
   createdAt      DateTime        @default(now())
 
   @@index([pointId, recordedAt])
+}
+
+model Prism {
+  id                 String          @id @default(cuid())
+  code               String          @unique
+  label              String
+  stationId          String
+  station            MonitoringPoint @relation(fields: [stationId], references: [id], onDelete: Cascade)
+  latitude           Float?
+  longitude          Float?
+  baselineElevationM Float?
+  status             RiskStatus      @default(NORMAL)
+  visible            Boolean         @default(true)
+  lastUpdate         DateTime
+  installedAt        DateTime?
+  notes              String?
+  readings           PrismReading[]
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  @@index([stationId])
+  @@index([status])
+}
+
+model PrismReading {
+  id                  String   @id @default(cuid())
+  prismId             String
+  prism               Prism    @relation(fields: [prismId], references: [id], onDelete: Cascade)
+  recordedAt          DateTime
+  dxMm                Float
+  dyMm                Float
+  dzMm                Float
+  totalDisplacementMm Float
+  velocityMmDay       Float
+  velocityCmYear      Float
+  slopeDistanceM      Float?
+  hzAngleDeg          Float?
+  vtAngleDeg          Float?
+  prismVisible        Boolean  @default(true)
+  createdAt           DateTime @default(now())
+
+  @@index([prismId, recordedAt])
 }
 
 model WaterLevelReading {

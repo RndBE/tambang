@@ -1,6 +1,6 @@
 export type RiskStatus = "Normal" | "Waspada" | "Siaga" | "Awas";
 
-export type PointType = "GNSS" | "AWLR" | "CCTV" | "WEATHER";
+export type PointType = "GNSS" | "ADR" | "RTS" | "AWLR" | "CCTV" | "WEATHER";
 
 export type DeviceStatus = "Online" | "Weak" | "Offline" | "Maintenance";
 
@@ -477,4 +477,97 @@ export type AlarmThresholdPointOption = {
   pointName: string;
   pointType: "GNSS" | "AWLR";
   area: string;
+};
+
+export type PrismStationType = "ADR" | "RTS";
+
+export type PrismParameter =
+  | "dx"
+  | "dy"
+  | "dz"
+  | "total"
+  | "velocity"
+  | "velocityYear";
+
+export type PrismStationSummary = {
+  id: string;
+  code: string;
+  name: string;
+  area: string;
+  type: PrismStationType;
+  status: RiskStatus;
+  latitude: number;
+  longitude: number;
+  coordinate: string;
+  instrumentModel: string;
+  instrumentSerial: string;
+  prismCount: number;
+  visiblePrismCount: number;
+  lostPrismCount: number;
+  worstPrismLabel: string;
+  worstPrismDisplacement: number;
+  worstPrismVelocity: number;
+  lastUpdate: string;
+  device: GnssDeviceInfo | null;
+  statusBreakdown: {
+    Normal: number;
+    Waspada: number;
+    Siaga: number;
+    Awas: number;
+  };
+};
+
+export type PrismSummary = {
+  id: string;
+  code: string;
+  label: string;
+  status: RiskStatus;
+  visible: boolean;
+  latitude: number | null;
+  longitude: number | null;
+  baselineElevationM: number | null;
+  lastUpdate: string;
+  latestDxMm: number;
+  latestDyMm: number;
+  latestDzMm: number;
+  latestTotalMm: number;
+  latestVelocityMmDay: number;
+  latestVelocityCmYear: number;
+  slopeDistanceM: number | null;
+  notes: string | null;
+};
+
+export type PrismTrendPoint = {
+  period: string;
+  recordedAt: string;
+  dx: number;
+  dy: number;
+  dz: number;
+  total: number;
+  velocity: number;
+  velocityYear: number;
+};
+
+export type PrismMetric = {
+  key: PrismParameter | "totalRange" | "velocityRange";
+  label: string;
+  value: string;
+  detail: string;
+};
+
+export type PrismMonitoringData = {
+  station: PrismStationSummary;
+  prisms: PrismSummary[];
+  selectedPrism: PrismSummary;
+  selectedParameter: PrismParameter;
+  selectedRange: GnssRange;
+  selectedGranularity: AnalysisGranularity;
+  trend: PrismTrendPoint[];
+  metrics: PrismMetric[];
+  analysis: {
+    latestValue: string;
+    deltaFromPrevious: string;
+    periodChange: string;
+    sampleCount: number;
+  };
 };

@@ -189,6 +189,178 @@ function buildWeatherReadings({
   return rows;
 }
 
+function progressShape(progress, profile) {
+  if (profile === "stable") return progress * 0.15;
+  if (profile === "creep") return progress;
+  if (profile === "accelerating") return Math.pow(progress, 2.1);
+  if (profile === "outlier") return Math.pow(progress, 2.6) * 1.2;
+  return progress;
+}
+
+function buildPrismReadings({
+  prismId,
+  totalDays = 180,
+  finalDxMm,
+  finalDyMm,
+  finalDzMm,
+  profile = "creep",
+  phase = 0,
+  visibleFromHoursAgo = null,
+}) {
+  const rows = [];
+
+  function readingAt(hoursBack) {
+    const elapsedHours = totalDays * 24 - hoursBack;
+    const progress = elapsedHours / (totalDays * 24);
+
+    const shape = progressShape(progress, profile);
+    const prevShape = progressShape(
+      Math.max(0, elapsedHours - 24) / (totalDays * 24),
+      profile,
+    );
+
+    const jitterCommon = Math.sin(elapsedHours * 0.13 + phase * 7) * 0.4;
+    const jitterSlow = Math.cos(elapsedHours * 0.05 + phase * 3) * 0.3;
+    const jitterDx = jitterCommon * 0.25 + jitterSlow * 0.15;
+    const jitterDy = jitterCommon * 0.2 + jitterSlow * 0.18;
+    const jitterDz = jitterCommon * 0.5 + jitterSlow * 0.32;
+
+    const dx = finalDxMm * shape + jitterDx;
+    const dy = finalDyMm * shape + jitterDy;
+    const dz = finalDzMm * shape + jitterDz;
+    const total = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+    const prevDx = finalDxMm * prevShape;
+    const prevDy = finalDyMm * prevShape;
+    const prevDz = finalDzMm * prevShape;
+    const prevTotal = Math.sqrt(
+      prevDx * prevDx + prevDy * prevDy + prevDz * prevDz,
+    );
+    const velocityMmDay = total - prevTotal;
+    const velocityCmYear = (velocityMmDay * 365) / 10;
+
+    const prismVisible =
+      visibleFromHoursAgo == null ? true : hoursBack >= visibleFromHoursAgo;
+
+    return {
+      prismId,
+      recordedAt: new Date(now.getTime() - hoursBack * 60 * 60 * 1000),
+      dxMm: round(dx, 2),
+      dyMm: round(dy, 2),
+      dzMm: round(dz, 2),
+      totalDisplacementMm: round(total, 2),
+      velocityMmDay: round(velocityMmDay, 3),
+      velocityCmYear: round(velocityCmYear, 2),
+      slopeDistanceM: round(
+        320 + Math.sin(elapsedHours * 0.01 + phase) * 0.4,
+        3,
+      ),
+      hzAngleDeg: round(
+        180 + Math.sin(phase * 1.7) * 30 + Math.cos(elapsedHours * 0.001) * 0.08,
+        4,
+      ),
+      vtAngleDeg: round(
+        88 + Math.sin(phase * 0.9) * 6 + Math.cos(elapsedHours * 0.002) * 0.04,
+        4,
+      ),
+      prismVisible,
+    };
+  }
+
+  for (let day = totalDays; day >= 2; day -= 1) {
+    rows.push(readingAt(day * 24));
+  }
+  for (let hour = 36; hour >= 0; hour -= 1) {
+    rows.push(readingAt(hour));
+  }
+  return rows;
+}
+
+function generatePrismsForStation(stationKey, prismCount, baseLat, baseLng, baseElev, statusProfile) {
+  const prisms = [];
+  for (let i = 1; i <= prismCount; i++) {
+    const r1 = Math.sin(i * 2.7 + stationKey.length * 0.31);
+    const r2 = Math.cos(i * 1.9 + stationKey.length * 0.71);
+    const r3 = Math.sin(i * 0.83 + stationKey.length * 0.13);
+
+    let profile = "stable";
+    let finalDx = r1 * 1.5;
+    let finalDy = r2 * 1.5;
+    let finalDz = -3 + r3 * 2;
+    let status = "NORMAL";
+    let visible = true;
+    let visibleFromHoursAgo = null;
+    let notes = null;
+
+    if (statusProfile === "critical") {
+      if (i === 1) {
+        profile = "outlier";
+        finalDx = -6 + r1 * 4;
+        finalDy = 3 + r2 * 4;
+        finalDz = -48 + r3 * 6;
+        status = "SIAGA";
+        notes = "Prism outlier, percepatan dz teramati dalam 14 hari terakhir.";
+      } else if (i === 2 || i === 3) {
+        profile = "accelerating";
+        finalDx = r1 * 5;
+        finalDy = r2 * 5;
+        finalDz = -26 + r3 * 4;
+        status = "WASPADA";
+      }
+    } else if (statusProfile === "alert") {
+      if (i === 1 || i === 2) {
+        profile = "accelerating";
+        finalDx = r1 * 4;
+        finalDy = r2 * 4;
+        finalDz = -22 + r3 * 4;
+        status = "WASPADA";
+      } else if (i === 3) {
+        profile = "creep";
+        finalDz = -15 + r3 * 3;
+        status = "WASPADA";
+      }
+    } else if (statusProfile === "watch") {
+      if (i === 1) {
+        profile = "creep";
+        finalDx = r1 * 3;
+        finalDy = r2 * 3;
+        finalDz = -14 + r3 * 3;
+        status = "WASPADA";
+      }
+    }
+
+    // Lost prism scenario: last prism of stations with status != calm becomes invisible
+    if (statusProfile !== "calm" && i === prismCount) {
+      visible = false;
+      profile = "stable";
+      finalDx = r1 * 0.4;
+      finalDy = r2 * 0.4;
+      finalDz = -1 + r3 * 0.5;
+      status = "WASPADA";
+      visibleFromHoursAgo = 36;
+      notes = "Prism kehilangan target sejak 36 jam lalu — perlu pemasangan ulang.";
+    }
+
+    prisms.push({
+      code: `prsm-${stationKey}-${String(i).padStart(2, "0")}`,
+      label: `Prism ${String(i).padStart(2, "0")}`,
+      latitude: round(baseLat + r1 * 0.00085, 6),
+      longitude: round(baseLng + r2 * 0.00085, 6),
+      baselineElevationM: round(baseElev + r3 * 8, 2),
+      status,
+      visible,
+      profile,
+      finalDxMm: round(finalDx, 2),
+      finalDyMm: round(finalDy, 2),
+      finalDzMm: round(finalDz, 2),
+      phase: i * 0.73 + stationKey.length * 0.21,
+      visibleFromHoursAgo,
+      notes,
+    });
+  }
+  return prisms;
+}
+
 async function main() {
   await prisma.report.deleteMany();
   await prisma.reportTemplate.deleteMany();
@@ -199,6 +371,8 @@ async function main() {
   await prisma.weatherReading.deleteMany();
   await prisma.waterLevelReading.deleteMany();
   await prisma.gnssReading.deleteMany();
+  await prisma.prismReading.deleteMany();
+  await prisma.prism.deleteMany();
   await prisma.pointThreshold.deleteMany();
   await prisma.device.deleteMany();
   await prisma.monitoringPoint.deleteMany();
@@ -335,6 +509,170 @@ async function main() {
       { pointId: points.cctvSp01.id, capturedAt: hoursAgo(4), imageUrl: null, visibility: "Cloudy", status: "WASPADA", note: "Aliran masuk dari drainase Pit A meningkat bertahap." },
       { pointId: points.cctvSp01.id, capturedAt: hoursAgo(8), imageUrl: null, visibility: "Clear", status: "NORMAL", note: "Outlet pond stabil dan tidak ada luapan di spillway." },
     ],
+  });
+
+  const prismStationConfigs = [
+    {
+      key: "adr-hw-w",
+      code: "adr-hw-west-01",
+      name: "ADR North Highwall West",
+      type: "ADR",
+      areaKey: "area-north-highwall",
+      status: "SIAGA",
+      statusProfile: "critical",
+      latestValue: "Prism kritis Δ48 mm/180hari",
+      latitude: -1.2129,
+      longitude: 116.8108,
+      baseElev: 188.4,
+      lastUpdate: hoursAgo(0.05),
+      instrumentModel: "Leica TM50",
+      instrumentSerial: "TM50-22-114",
+      prismCount: 12,
+      device: { code: "dev-adr-hw-w-01", name: "Logger ADR North Highwall West", battery: 78, signal: 71, firmware: "3.1.0", sensorStatus: "ADR aktif, beberapa prism outlier", status: "ONLINE" },
+    },
+    {
+      key: "adr-pit-b",
+      code: "adr-pit-b-01",
+      name: "ADR Pit B Bench",
+      type: "ADR",
+      areaKey: "area-pit-b",
+      status: "WASPADA",
+      statusProfile: "alert",
+      latestValue: "Prism Δ22 mm, velocity meningkat",
+      latitude: -1.2245,
+      longitude: 116.8075,
+      baseElev: 124.6,
+      lastUpdate: hoursAgo(0.07),
+      instrumentModel: "Leica TS60",
+      instrumentSerial: "TS60-23-208",
+      prismCount: 14,
+      device: { code: "dev-adr-pit-b-01", name: "Logger ADR Pit B Bench", battery: 84, signal: 79, firmware: "3.1.0", sensorStatus: "ADR aktif, monitoring 14 prism", status: "ONLINE" },
+    },
+    {
+      key: "rts-dump",
+      code: "rts-dump-east-01",
+      name: "RTS Disposal Dome East",
+      type: "RTS",
+      areaKey: "area-south-dump",
+      status: "SIAGA",
+      statusProfile: "critical",
+      latestValue: "Prism toe dome Δ52 mm",
+      latitude: -1.2336,
+      longitude: 116.7984,
+      baseElev: 138.2,
+      lastUpdate: hoursAgo(0.06),
+      instrumentModel: "Trimble S9 HP",
+      instrumentSerial: "S9-21-077",
+      prismCount: 11,
+      device: { code: "dev-rts-dump-01", name: "Logger RTS Disposal Dome East", battery: 66, signal: 58, firmware: "2.9.4", sensorStatus: "RTS aktif, target dome dipantau", status: "WEAK" },
+    },
+    {
+      key: "rts-tail",
+      code: "rts-tailing-01",
+      name: "RTS Tailing Dam Crest",
+      type: "RTS",
+      areaKey: "area-tailing-dam",
+      status: "NORMAL",
+      statusProfile: "calm",
+      latestValue: "Semua prism stabil",
+      latitude: -1.2502,
+      longitude: 116.8064,
+      baseElev: 156.8,
+      lastUpdate: hoursAgo(0.04),
+      instrumentModel: "Trimble S7",
+      instrumentSerial: "S7-22-031",
+      prismCount: 13,
+      device: { code: "dev-rts-tail-01", name: "Logger RTS Tailing Dam Crest", battery: 91, signal: 86, firmware: "2.9.4", sensorStatus: "RTS aktif, semua prism nominal", status: "ONLINE" },
+    },
+  ];
+
+  const prismStations = {};
+  for (const config of prismStationConfigs) {
+    prismStations[config.key] = await prisma.monitoringPoint.create({
+      data: {
+        code: config.code,
+        name: config.name,
+        type: config.type,
+        latitude: config.latitude,
+        longitude: config.longitude,
+        areaId: areaByKey[config.areaKey].id,
+        status: config.status,
+        latestValue: config.latestValue,
+        lastUpdate: config.lastUpdate,
+        instrumentModel: config.instrumentModel,
+        instrumentSerial: config.instrumentSerial,
+        prismCount: config.prismCount,
+      },
+    });
+  }
+
+  await prisma.device.createMany({
+    data: prismStationConfigs.map((config) => ({
+      code: config.device.code,
+      name: config.device.name,
+      type: config.type,
+      status: config.device.status,
+      battery: config.device.battery,
+      signal: config.device.signal,
+      firmwareVersion: config.device.firmware,
+      sensorStatus: config.device.sensorStatus,
+      lastDataReceived: config.lastUpdate,
+      pointId: prismStations[config.key].id,
+    })),
+  });
+
+  for (const config of prismStationConfigs) {
+    const stationId = prismStations[config.key].id;
+    const prismDefs = generatePrismsForStation(
+      config.key,
+      config.prismCount,
+      config.latitude,
+      config.longitude,
+      config.baseElev,
+      config.statusProfile,
+    );
+
+    for (const def of prismDefs) {
+      const prism = await prisma.prism.create({
+        data: {
+          code: def.code,
+          label: def.label,
+          stationId,
+          latitude: def.latitude,
+          longitude: def.longitude,
+          baselineElevationM: def.baselineElevationM,
+          status: def.status,
+          visible: def.visible,
+          lastUpdate: config.lastUpdate,
+          installedAt: daysAgo(180),
+          notes: def.notes,
+        },
+      });
+
+      await prisma.prismReading.createMany({
+        data: buildPrismReadings({
+          prismId: prism.id,
+          finalDxMm: def.finalDxMm,
+          finalDyMm: def.finalDyMm,
+          finalDzMm: def.finalDzMm,
+          profile: def.profile,
+          phase: def.phase,
+          visibleFromHoursAgo: def.visibleFromHoursAgo,
+        }),
+      });
+    }
+  }
+
+  await prisma.pointThreshold.createMany({
+    data: prismStationConfigs.map((config) => ({
+      pointId: prismStations[config.key].id,
+      parameter: "displacement",
+      unit: "mm",
+      normal: 10,
+      waspada: 20,
+      siaga: 35,
+      awas: 55,
+    })),
   });
 
   await prisma.alarm.createMany({
