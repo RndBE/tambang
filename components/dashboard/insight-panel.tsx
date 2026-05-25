@@ -46,11 +46,11 @@ const severityStyles: Record<
 type InsightPanelProps = {
   insights: Insight[];
   stationName: string;
-  mode: "gnss" | "awlr";
+  mode: "gnss" | "awlr" | "prism";
 };
 
 export function InsightPanel({ insights, stationName, mode }: InsightPanelProps) {
-  const modeLabel = mode === "gnss" ? "ADR" : "AWLR";
+  const modeLabel = mode === "gnss" ? "ADR" : mode === "prism" ? "Prism" : "AWLR";
   const dangerCount = insights.filter((i) => i.severity === "danger").length;
   const warningCount = insights.filter((i) => i.severity === "warning").length;
 

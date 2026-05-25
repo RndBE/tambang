@@ -555,6 +555,31 @@ export type PrismMetric = {
   detail: string;
 };
 
+export type PrismTrendStatus = "Membaik" | "Stabil" | "Memburuk";
+
+export type PrismAnomalySeverity = "Info" | "Warning" | "Critical";
+
+export type PrismRegressionSummary = {
+  status: PrismTrendStatus;
+  slopeMmPerDay: number;
+  velocityMmDay: number;
+  velocityChangeMmDay: number;
+  rSquared: number;
+  confidence: "Tinggi" | "Sedang" | "Rendah";
+  dominantAxis: "ΔX" | "ΔY" | "ΔZ" | "Merata";
+  detail: string;
+};
+
+export type PrismAnomaly = {
+  id: string;
+  period: string;
+  recordedAt: string;
+  severity: PrismAnomalySeverity;
+  parameter: "ΔX" | "ΔY" | "ΔZ" | "Total" | "Velocity";
+  delta: string;
+  message: string;
+};
+
 export type PrismMonitoringData = {
   station: PrismStationSummary;
   prisms: PrismSummary[];
@@ -564,6 +589,8 @@ export type PrismMonitoringData = {
   selectedGranularity: AnalysisGranularity;
   trend: PrismTrendPoint[];
   metrics: PrismMetric[];
+  trendAnalysis: PrismRegressionSummary;
+  anomalies: PrismAnomaly[];
   analysis: {
     latestValue: string;
     deltaFromPrevious: string;

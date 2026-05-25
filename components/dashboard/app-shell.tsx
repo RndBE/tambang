@@ -14,6 +14,7 @@ type AppShellProps = {
   riskStatus?: string
   contentPadding?: boolean
   fullBleed?: boolean
+  headerAction?: ReactNode
 }
 
 export function AppShell({
@@ -22,6 +23,7 @@ export function AppShell({
   title = "Dashboard",
   contentPadding = true,
   fullBleed = false,
+  headerAction,
 }: AppShellProps) {
   const contentClassName = fullBleed
     ? "flex min-h-0 flex-1 flex-col"
@@ -48,6 +50,7 @@ export function AppShell({
       >
         <SiteHeader
           title={title}
+          action={headerAction}
         />
         <div className="flex min-h-0 flex-1 flex-col">
           <div className="@container/main flex min-h-0 flex-1 flex-col gap-2">

@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Filter, RotateCcw } from "lucide-react";
 
@@ -49,6 +50,7 @@ type PrismFilterBarProps = {
   selectedGranularity: AnalysisGranularity;
   selectedDateFrom: string;
   selectedDateTo: string;
+  action?: React.ReactNode;
 };
 
 export function PrismFilterBar({
@@ -57,6 +59,7 @@ export function PrismFilterBar({
   selectedGranularity,
   selectedDateFrom,
   selectedDateTo,
+  action,
 }: PrismFilterBarProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -177,6 +180,7 @@ export function PrismFilterBar({
           <RotateCcw className="size-3.5" />
           Reset
         </Button>
+        {action}
       </div>
     </div>
   );

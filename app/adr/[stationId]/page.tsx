@@ -10,9 +10,11 @@ import {
   RadioTowerIcon,
   SignalIcon,
   TargetIcon,
+  TriangleAlertIcon,
 } from "lucide-react";
 
 import { AppShell } from "@/components/dashboard/app-shell";
+import { InsightPanel } from "@/components/dashboard/insight-panel";
 import { PrismFilterBar } from "@/components/dashboard/prism-filter-bar";
 import { PrismTrendChart } from "@/components/dashboard/prism-trend-chart";
 import {
@@ -41,7 +43,8 @@ import {
   getDashboardSummary,
   getPrismMonitoringData,
 } from "@/lib/backend/queries";
-import type { PrismMonitoringData, PrismSummary } from "@/lib/types";
+import { generatePrismInsights } from "@/lib/insights";
+import type { PrismAnomaly, PrismMonitoringData, PrismRegressionSummary, PrismSummary } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -82,6 +85,7 @@ export default async function AdrDetailPage({
   const { station, prisms, selectedPrism } = data;
   const dateFrom = firstParam(sp.from) ?? "";
   const dateTo = firstParam(sp.to) ?? "";
+  const insights = generatePrismInsights(data);
 
   return (
     <AppShell
@@ -145,6 +149,13 @@ export default async function AdrDetailPage({
           selectedGranularity={data.selectedGranularity}
           selectedDateFrom={dateFrom}
           selectedDateTo={dateTo}
+          action={
+            <InsightPanel
+              insights={insights}
+              stationName={`${selectedPrism.label} · ${station.name}`}
+              mode="prism"
+            />
+          }
         />
 
         <div className="grid gap-3 xl:grid-cols-[280px_minmax(0,1fr)]">
@@ -174,6 +185,11 @@ export default async function AdrDetailPage({
               granularity={data.selectedGranularity}
             />
           </div>
+        </div>
+
+        <div className="grid gap-4 xl:grid-cols-2">
+          <TrendAnalysisCard analysis={data.trendAnalysis} prismLabel={selectedPrism.label} />
+          <AnomaliesCard anomalies={data.anomalies} />
         </div>
 
         <ObservationTable data={data} />
@@ -528,4 +544,122 @@ function ObservationTable({ data }: { data: PrismMonitoringData }) {
 function formatSigned(value: number, digits = 2) {
   const sign = value > 0 ? "+" : "";
   return `${sign}${value.toFixed(digits)}`;
+}
+
+const trendStatusClasses: Record<PrismRegressionSummary["status"], string> = {
+  Membaik: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  Stabil: "border-blue-200 bg-blue-50 text-blue-700",
+  Memburuk: "border-amber-200 bg-amber-50 text-amber-800",
+};
+
+const confidenceClasses: Record<PrismRegressionSummary["confidence"], string> = {
+  Tinggi: "text-emerald-600",
+  Sedang: "text-amber-600",
+  Rendah: "text-red-600",
+};
+
+function TrendAnalysisCard({
+  analysis,
+  prismLabel,
+}: {
+  analysis: PrismRegressionSummary;
+  prismLabel: string;
+}) {
+  return (
+    <Card className="interactive-card">
+      <CardHeader className="pb-3 border-b">
+        <CardTitle className="text-sm">Analisis Tren Pergeseran</CardTitle>
+        <CardDescription>{prismLabel} — regresi linier displacement total</CardDescription>
+      </CardHeader>
+      <CardContent className="p-4 grid gap-3">
+        <div className="flex items-center justify-between gap-3">
+          <span
+            className={cn(
+              "rounded-full border px-2.5 py-0.5 text-xs font-semibold",
+              trendStatusClasses[analysis.status],
+            )}
+          >
+            {analysis.status}
+          </span>
+          <span className={cn("text-xs font-medium", confidenceClasses[analysis.confidence])}>
+            Confidence: {analysis.confidence}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-3">
+          <StatRow label="Slope" value={`${analysis.slopeMmPerDay > 0 ? "+" : ""}${analysis.slopeMmPerDay.toFixed(3)} mm/hari`} />
+          <StatRow label="Velocity terkini" value={`${analysis.velocityMmDay > 0 ? "+" : ""}${analysis.velocityMmDay.toFixed(3)} mm/hari`} />
+          <StatRow label="Δ Velocity" value={`${analysis.velocityChangeMmDay > 0 ? "+" : ""}${analysis.velocityChangeMmDay.toFixed(3)} mm/hari`} />
+          <StatRow label="R²" value={analysis.rSquared.toFixed(2)} />
+          <StatRow label="Sumbu dominan" value={analysis.dominantAxis} />
+        </div>
+
+        <p className="text-[11px] text-muted-foreground border-t pt-2">
+          {analysis.detail}
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function StatRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md border bg-muted/30 p-2">
+      <p className="text-[10px] text-muted-foreground">{label}</p>
+      <p className="mt-0.5 font-semibold tabular-nums">{value}</p>
+    </div>
+  );
+}
+
+const anomalySeverityClasses: Record<PrismAnomaly["severity"], string> = {
+  Critical: "border-red-200 bg-red-50 text-red-700",
+  Warning: "border-amber-200 bg-amber-50 text-amber-800",
+  Info: "border-blue-200 bg-blue-50 text-blue-700",
+};
+
+function AnomaliesCard({ anomalies }: { anomalies: PrismAnomaly[] }) {
+  return (
+    <Card className="interactive-card">
+      <CardHeader className="pb-3 border-b">
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <CardTitle className="text-sm">Deteksi Anomali Prism</CardTitle>
+            <CardDescription>
+              {anomalies.length > 0
+                ? `${anomalies.length} anomali terdeteksi dalam rentang ini`
+                : "Tidak ada anomali signifikan dalam rentang ini"}
+            </CardDescription>
+          </div>
+          {anomalies.some((a) => a.severity === "Critical") && (
+            <TriangleAlertIcon className="size-4 text-red-600 shrink-0" />
+          )}
+        </div>
+      </CardHeader>
+      <CardContent className="p-3">
+        {anomalies.length === 0 ? (
+          <p className="py-4 text-center text-sm text-muted-foreground">
+            Data konsisten — tidak ada lonjakan terdeteksi
+          </p>
+        ) : (
+          <div className="grid gap-2">
+            {anomalies.slice(0, 6).map((anomaly) => (
+              <div
+                key={anomaly.id}
+                className={cn(
+                  "rounded-lg border p-2.5 text-xs",
+                  anomalySeverityClasses[anomaly.severity],
+                )}
+              >
+                <div className="flex items-center justify-between gap-2 font-semibold">
+                  <span>{anomaly.parameter} · {anomaly.delta}</span>
+                  <span className="font-mono text-[10px] opacity-70">{anomaly.period}</span>
+                </div>
+                <p className="mt-1 font-normal opacity-80">{anomaly.message}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
 }

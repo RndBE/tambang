@@ -37,9 +37,11 @@ import type {
   GnssTrendPoint,
   MaintenanceLog,
   MonitoringPoint,
+  PrismAnomaly,
   PrismMetric,
   PrismMonitoringData,
   PrismParameter,
+  PrismRegressionSummary,
   PrismStationSummary,
   PrismStationType,
   PrismSummary,
@@ -2267,6 +2269,155 @@ function aggregatePrismTrend(
   }));
 }
 
+function buildPrismRegressionSummary(rows: PrismTrendPoint[]): PrismRegressionSummary {
+  if (rows.length < 2) {
+    return {
+      status: "Stabil",
+      slopeMmPerDay: 0,
+      velocityMmDay: 0,
+      velocityChangeMmDay: 0,
+      rSquared: 0,
+      confidence: "Rendah",
+      dominantAxis: "Merata",
+      detail: "Data belum cukup untuk regresi tren",
+    };
+  }
+
+  const start = new Date(rows[0].recordedAt).getTime();
+  const points = rows.map((row) => ({
+    x: (new Date(row.recordedAt).getTime() - start) / (1000 * 60 * 60 * 24),
+    y: row.total,
+  }));
+  const meanX = average(points.map((p) => p.x));
+  const meanY = average(points.map((p) => p.y));
+  const denominator = points.reduce((s, p) => s + (p.x - meanX) ** 2, 0);
+  const slope =
+    denominator === 0
+      ? 0
+      : points.reduce((s, p) => s + (p.x - meanX) * (p.y - meanY), 0) / denominator;
+  const intercept = meanY - slope * meanX;
+  const residual = points.reduce((s, p) => s + (p.y - (slope * p.x + intercept)) ** 2, 0);
+  const totalVariance = points.reduce((s, p) => s + (p.y - meanY) ** 2, 0);
+  const rSquared =
+    totalVariance === 0 ? 1 : Math.max(0, Math.min(1, 1 - residual / totalVariance));
+
+  const midpoint = Math.max(1, Math.floor(rows.length / 2));
+  const firstVelocity = average(rows.slice(0, midpoint).map((r) => r.velocity));
+  const secondVelocity = average(rows.slice(midpoint).map((r) => r.velocity));
+  const velocityChange = secondVelocity - firstVelocity;
+
+  const status: PrismRegressionSummary["status"] =
+    velocityChange > 0.05
+      ? "Memburuk"
+      : velocityChange < -0.05
+        ? "Membaik"
+        : "Stabil";
+
+  const confidence: PrismRegressionSummary["confidence"] =
+    rows.length >= 12 && rSquared >= 0.75
+      ? "Tinggi"
+      : rows.length >= 6 && rSquared >= 0.4
+        ? "Sedang"
+        : "Rendah";
+
+  const avgAbsDx = average(rows.map((r) => Math.abs(r.dx)));
+  const avgAbsDy = average(rows.map((r) => Math.abs(r.dy)));
+  const avgAbsDz = average(rows.map((r) => Math.abs(r.dz)));
+  const maxAxis = Math.max(avgAbsDx, avgAbsDy, avgAbsDz);
+  const dominantAxis: PrismRegressionSummary["dominantAxis"] =
+    maxAxis <= 0.5
+      ? "Merata"
+      : maxAxis === avgAbsDz
+        ? "ΔZ"
+        : maxAxis === avgAbsDx
+          ? "ΔX"
+          : "ΔY";
+
+  const latestVelocity = rows[rows.length - 1]?.velocity ?? 0;
+
+  return {
+    status,
+    slopeMmPerDay: round(slope, 3),
+    velocityMmDay: round(latestVelocity, 3),
+    velocityChangeMmDay: round(velocityChange, 3),
+    rSquared: round(rSquared, 2),
+    confidence,
+    dominantAxis,
+    detail: `Regresi total displacement ${rows.length} sampel, R²=${round(rSquared, 2)}, sumbu dominan ${dominantAxis}`,
+  };
+}
+
+function prismAnomalySeverity(delta: number, warning: number, critical: number): PrismAnomaly["severity"] {
+  if (Math.abs(delta) >= critical) return "Critical";
+  if (Math.abs(delta) >= warning) return "Warning";
+  return "Info";
+}
+
+function buildPrismAnomalies(rows: PrismTrendPoint[]): PrismAnomaly[] {
+  const anomalies: PrismAnomaly[] = [];
+
+  for (let i = 1; i < rows.length; i += 1) {
+    const prev = rows[i - 1];
+    const curr = rows[i];
+
+    const deltaTotal = curr.total - prev.total;
+    const deltaVelocity = curr.velocity - prev.velocity;
+    const deltaDz = curr.dz - prev.dz;
+
+    if (Math.abs(deltaTotal) >= 5) {
+      const severity = prismAnomalySeverity(deltaTotal, 5, 15);
+      anomalies.push({
+        id: `${curr.recordedAt}-total`,
+        period: curr.period,
+        recordedAt: curr.recordedAt,
+        severity,
+        parameter: "Total",
+        delta: `${deltaTotal > 0 ? "+" : ""}${deltaTotal.toFixed(2)} mm`,
+        message:
+          severity === "Critical"
+            ? "Lonjakan displacement total kritis — perlu cek lapangan segera"
+            : "Lonjakan displacement total melewati batas normal",
+      });
+    }
+
+    if (Math.abs(deltaDz) >= 3) {
+      const severity = prismAnomalySeverity(deltaDz, 3, 10);
+      anomalies.push({
+        id: `${curr.recordedAt}-dz`,
+        period: curr.period,
+        recordedAt: curr.recordedAt,
+        severity,
+        parameter: "ΔZ",
+        delta: `${deltaDz > 0 ? "+" : ""}${deltaDz.toFixed(2)} mm`,
+        message:
+          severity === "Critical"
+            ? "Lonjakan vertikal kritis — indikasi penurunan tanah mendadak"
+            : "Perubahan vertikal perlu divalidasi",
+      });
+    }
+
+    if (Math.abs(deltaVelocity) >= 0.3) {
+      const severity = prismAnomalySeverity(deltaVelocity, 0.3, 1.0);
+      anomalies.push({
+        id: `${curr.recordedAt}-vel`,
+        period: curr.period,
+        recordedAt: curr.recordedAt,
+        severity,
+        parameter: "Velocity",
+        delta: `${deltaVelocity > 0 ? "+" : ""}${deltaVelocity.toFixed(3)} mm/hari`,
+        message:
+          severity === "Critical"
+            ? "Perubahan kecepatan kritis — akselerasi pergerakan mendadak"
+            : "Perubahan kecepatan perlu divalidasi",
+      });
+    }
+  }
+
+  return anomalies
+    .sort((a, b) => new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime())
+    .slice(0, 10);
+}
+
 export async function getPrismMonitoringData(filters: {
   stationCode: string;
   prismCode?: string | null;
@@ -2359,6 +2510,9 @@ export async function getPrismMonitoringData(filters: {
       ? formatPrismValue(latestRaw[parameter] - firstRaw[parameter], parameter)
       : "-";
 
+  const trendAnalysis = buildPrismRegressionSummary(rawTrend);
+  const anomalies = buildPrismAnomalies(rawTrend);
+
   return {
     station: summary,
     prisms,
@@ -2368,6 +2522,8 @@ export async function getPrismMonitoringData(filters: {
     selectedGranularity: granularity,
     trend,
     metrics: buildPrismMetrics(selectedPrism),
+    trendAnalysis,
+    anomalies,
     analysis: {
       latestValue,
       deltaFromPrevious,
